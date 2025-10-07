@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESG & Timesheet Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        // Enable dark mode based on class
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevent body scrolling */
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-link.active, .nav-link:hover {
+            background-color: #e0f2fe; /* light sky 100 */
+            color: #0284c7; /* sky 600 */
+        }
+        .dark .nav-link.active, .dark .nav-link:hover {
+             background-color: #0c4a6e; /* sky 900 */
+             color: #e0f2fe; /* sky 100 */
+        }
+        .settings-link.active, .settings-link:hover {
+            background-color: #e0f2fe; /* light sky 100 */
+            color: #0284c7; /* sky 600 */
+        }
+        .dark .settings-link.active, .dark .settings-link:hover {
+             background-color: #0c4a6e; /* sky 900 */
+             color: #e0f2fe; /* sky 100 */
+        }
+
+        .section {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Chart.js responsive canvas */
+        .chart-container {
+            position: relative;
+            height: 40vh;
+            width: 100%;
+        }
+        /* Toast Notification */
+        .toast {
+            animation: slideIn 0.3s ease-in-out, fadeOut 0.5s ease-in-out 2.5s forwards;
+        }
+        @keyframes slideIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        @media print {
+             body * { visibility: hidden; }
+             .print-area, .print-area * { visibility: visible; }
+             .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+             .no-print { display: none; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
+
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-3"></div>
+
+    <div id="loading" class="flex items-center justify-center min-h-screen">
+        <div class="text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
+            <p class="mt-4 text-lg">Loading Dashboard...</p>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden md:flex h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
+            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                <h1 class="text-xl font-bold"><i class="fas fa-leaf mr-2 text-green-500"></i>ESG Tracker</h1>
+            </div>
+            <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
+                <a href="#" data-section="dashboard" class="nav-link active flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg">
+                    <i class="fas fa-tachometer-alt w-6 h-6 mr-3"></i>Dashboard
+                </a>
+                <a href="#" data-section="data-entry" class="nav-link flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg">
+                    <i class="fas fa-edit w-6 h-6 mr-3"></i>Data Entry
+                </a>
+                <a href="#" data-section="timesheet" class="nav-link flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg">
+                    <i class="fas fa-clock w-6 h-6 mr-3"></i>Timesheet
+                </a>
+                <a href="#" data-section="reports" class="nav-link flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg">
+                    <i class="fas fa-chart-pie w-6 h-6 mr-3"></i>Reports
+                </a>
+                <a href="#" data-section="settings" class="nav-link flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg">
+                    <i class="fas fa-cog w-6 h-6 mr-3"></i>Settings
+                </a>
+            </nav>
+            <div class="px-4 py-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                 <p class="text-xs text-gray-500 dark:text-gray-400">Welcome,</p>
+                 <p id="user-display" class="font-medium text-sm truncate">user</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+            <!-- ESG Dashboard Section -->
+            <section id="section-dashboard" class="section">
+                <header class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white">ESG Command Center</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1" id="dashboard-date">Tuesday, 7 October 2025</p>
+                </header>
+
+                <!-- KPI Cards -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Overall ESG Score Card -->
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Overall ESG Score</p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-esg-score">0</p>
+                             <div class="flex items-center text-sm" id="kpi-esg-trend-container">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span id="kpi-esg-trend-text">--% vs last quarter</span>
+                            </div>
+                        </div>
+                        <div class="relative w-20 h-20">
+                            <canvas id="kpi-esg-chart"></canvas>
+                             <div id="kpi-esg-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-blue-500">0%</div>
+                        </div>
+                    </div>
+                    <!-- Energy Consumption Card -->
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Energy Consumption</p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-energy">0 <span class="text-base font-normal text-gray-500">kWh</span></p>
+                            <div class="flex items-center text-sm" id="kpi-energy-trend-container">
+                                <i class="fas fa-arrow-down mr-1"></i>
+                                <span id="kpi-energy-trend-text">--% vs last quarter</span>
+                            </div>
+                        </div>
+                         <div class="relative w-20 h-20">
+                            <canvas id="kpi-energy-chart"></canvas>
+                            <div id="kpi-energy-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-green-500">0%</div>
+                        </div>
+                    </div>
+                    <!-- Waste Recycled Card -->
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Waste Recycled</p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-waste">0%</p>
+                            <div class="flex items-center text-sm" id="kpi-waste-trend-container">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span id="kpi-waste-trend-text">--% vs last quarter</span>
+                            </div>
+                        </div>
+                         <div class="relative w-20 h-20">
+                            <canvas id="kpi-waste-chart"></canvas>
+                             <div id="kpi-waste-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-yellow-500">0%</div>
+                        </div>
+                    </div>
+                    <!-- Social Compliance Card -->
+                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Social Compliance</p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-social">0%</p>
+                             <div class="flex items-center text-sm" id="kpi-social-trend-container">
+                                <i class="fas fa-arrow-down mr-1"></i>
+                                <span id="kpi-social-trend-text">--% vs last quarter</span>
+                            </div>
+                        </div>
+                         <div class="relative w-20 h-20">
+                            <canvas id="kpi-social-chart"></canvas>
+                             <div id="kpi-social-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-purple-500">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Key Insights & Alerts -->
+                <div class="mt-8">
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Key Insights & Alerts</h3>
+                    <div id="insights-alerts-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Dynamic alerts will be injected here -->
+                    </div>
+                </div>
+
+                <!-- Main Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
+                    <!-- Left Side: Main Chart & Recent Activity -->
+                    <div class="lg:col-span-3 space-y-6">
+                        <!-- Interactive Main Chart -->
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                             <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-semibold">Performance Trends</h3>
+                                <div id="chart-toggles" class="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                                    <button data-chart="environmental" class="chart-toggle active px-3 py-1 text-sm font-medium rounded-md">Environmental</button>
+                                    <button data-chart="social" class="chart-toggle px-3 py-1 text-sm font-medium rounded-md">Social</button>
+                                    <button data-chart="governance" class="chart-toggle px-3 py-1 text-sm font-medium rounded-md">Governance</button>
+                                </div>
+                            </div>
+                            <div class="h-80"><canvas id="main-dashboard-chart"></canvas></div>
+                        </div>
+                        
+                         <!-- Recent Activity -->
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                            <h3 class="text-xl font-semibold mb-4">Recent Activity</h3>
+                            <div id="recent-activity-feed" class="space-y-4">
+                                <!-- Real-time content is injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Side: Initiatives, Breakdown, News -->
+                    <div class="lg:col-span-2 space-y-6">
+                         <!-- Key Initiatives -->
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                            <h3 class="text-xl font-semibold mb-4">Key Initiatives</h3>
+                            <ul class="space-y-5">
+                                <li class="initiative-item">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <p class="font-medium">Reduce Carbon Footprint by 15%</p>
+                                        <p class="text-sm font-bold text-green-500">75%</p>
+                                    </div>
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                        <div class="bg-green-500 h-2.5 rounded-full" style="width: 75%;"></div>
+                                    </div>
+                                </li>
+                                <li class="initiative-item">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <p class="font-medium">Increase Board Diversity to 40%</p>
+                                        <p class="text-sm font-bold text-blue-500">90%</p>
+                                    </div>
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                        <div class="bg-blue-500 h-2.5 rounded-full" style="width: 90%;"></div>
+                                    </div>
+                                </li>
+                                 <li class="initiative-item">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <p class="font-medium">Achieve 90% Waste Recycling</p>
+                                        <p class="text-sm font-bold text-yellow-500">82%</p>
+                                    </div>
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                        <div class="bg-yellow-500 h-2.5 rounded-full" style="width: 82%;"></div>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                        <!-- Metric Breakdown -->
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                            <h3 class="text-xl font-semibold mb-4">Latest Month Metric Breakdown</h3>
+                            <div class="h-64"><canvas id="metric-breakdown-chart"></canvas></div>
+                        </div>
+                        <!-- ESG News -->
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                             <h3 class="text-xl font-semibold mb-4">ESG News & Regulatory Updates</h3>
+                             <ul id="esg-news-feed" class="space-y-3 text-sm">
+                                <!-- News items injected here -->
+                             </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    #chart-toggles .chart-toggle.active {
+                        @apply bg-white text-blue-600 shadow-sm dark:bg-gray-800 dark:text-blue-400;
+                    }
+                </style>
+            </section>
+
+            <!-- Data Entry Section -->
+            <section id="section-data-entry" class="section hidden">
+                 <header class="mb-6">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Log ESG Data</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1">Enter your new sustainability data for the month.</p>
+                </header>
+                 <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                    <form id="esg-form" class="space-y-6">
+                        <div>
+                            <label for="month" class="block text-sm font-medium">Month</label>
+                            <input type="month" id="month" required class="mt-1 block w-full form-input">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                             <!-- Environmental -->
+                            <div class="space-y-4 p-4 border rounded-lg border-gray-200 dark:border-gray-700">
+                                <h3 class="font-semibold text-green-700 dark:text-green-400">Environmental</h3>
+                                <div>
+                                    <label for="energy" class="block text-sm font-medium">Energy Consumption (kWh)</label>
+                                    <input type="number" id="energy" placeholder="e.g., 5000" class="mt-1 w-full form-input">
+                                </div>
+                                <div>
+                                    <label for="waste" class="block text-sm font-medium">Waste Recycled (%)</label>
+                                    <input type="number" id="waste" placeholder="e.g., 75" class="mt-1 w-full form-input">
+                                </div>
+                            </div>
+                             <!-- Social -->
+                             <div class="space-y-4 p-4 border rounded-lg border-gray-200 dark:border-gray-700">
+                                <h3 class="font-semibold text-blue-700 dark:text-blue-400">Social</h3>
+                                <div>
+                                    <label for="diversity" class="block text-sm font-medium">Workforce Diversity (%)</label>
+                                    <input type="number" id="diversity" placeholder="e.g., 45" class="mt-1 w-full form-input">
+                                </div>
+                                <div>
+                                    <label for="safety" class="block text-sm font-medium">Safety Incidents</label>
+                                    <input type="number" id="safety" placeholder="e.g., 2" class="mt-1 w-full form-input">
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Governance -->
+                        <div class="space-y-4 p-4 border rounded-lg border-gray-200 dark:border-gray-700">
+                                <h3 class="font-semibold text-yellow-700 dark:text-yellow-400">Governance</h3>
+                                <div>
+                                    <label for="compliance" class="block text-sm font-medium">Compliance Training (%)</label>
+                                    <input type="number" id="compliance" placeholder="e.g., 98" class="mt-1 w-full form-input">
+                                </div>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                            Submit Data
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Timesheet Section -->
+            <section id="section-timesheet" class="section hidden">
+                <header class="mb-6 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Timesheet</h2>
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">Track your work hours efficiently.</p>
+                    </div>
+                    <div id="clock-container" class="text-right">
+                         <div class="text-3xl font-bold" id="digital-clock">12:00:00 PM</div>
+                         <div class="text-sm text-gray-500 dark:text-gray-400" id="current-date">Tuesday, Oct 7, 2025</div>
+                    </div>
+                </header>
+                <!-- Clock In/Out Controls -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 mb-6 flex flex-col sm:flex-row justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-semibold">Time Tracker</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Click to start or end your work session.</p>
+                    </div>
+                    <div class="mt-4 sm:mt-0">
+                        <button id="clock-in-out-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105 w-full sm:w-auto">
+                            <i class="fas fa-play mr-2"></i>Clock In
+                        </button>
+                    </div>
+                </div>
+                <!-- Calendar and Summary -->
+                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div id="calendar-container" class="lg:col-span-2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between mb-4">
+                            <button id="prev-month" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><i class="fas fa-chevron-left"></i></button>
+                            <h3 id="month-year" class="text-lg font-semibold"></h3>
+                            <button id="next-month" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <div id="calendar" class="grid grid-cols-7 gap-1"></div>
+                    </div>
+                    <div id="summary-container" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">Summary for <span id="selected-date-str"></span></h3>
+                        <div id="summary-content" class="text-sm text-gray-600 dark:text-gray-400">Select a date to see details.</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section id="section-reports" class="section hidden">
+                <header class="mb-6">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Reports</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1">Generate and view your data reports.</p>
+                </header>
+                <div class="space-y-8">
+                    <!-- Timesheet Report -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold">Timesheet Working Report</h3>
+                             <button id="download-csv-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                <i class="fas fa-download mr-2"></i>Download CSV
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                                <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3">Date</th><th scope="col" class="px-6 py-3">Clock In</th><th scope="col" class="px-6 py-3">Clock Out</th><th scope="col" class="px-6 py-3">Duration</th><th scope="col" class="px-6 py-3">Note</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="report-table-body">
+                                    <tr><td colspan="5" class="text-center p-6 text-gray-500">No records found.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ESG Report -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md border border-gray-200 dark:border-gray-700">
+                        <h3 class="text-xl font-bold">Generate ESG Report</h3>
+                        <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">Select your criteria to generate a new report.</p>
+                        <form id="report-generator-form" class="mt-6 no-print">
+                             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                 <div>
+                                     <label for="report-type" class="block text-sm font-medium">Report Type</label>
+                                     <select id="report-type" class="mt-1 block w-full form-input">
+                                         <option>Annual Summary</option>
+                                         <option>Energy Consumption Analysis</option>
+                                         <option>Waste Recycling Trends</option>
+                                     </select>
+                                 </div>
+                                 <div>
+                                     <label for="start-date" class="block text-sm font-medium">Start Date</label>
+                                     <input type="date" id="start-date" class="mt-1 block w-full form-input">
+                                 </div>
+                                 <div>
+                                     <label for="end-date" class="block text-sm font-medium">End Date</label>
+                                     <input type="date" id="end-date" class="mt-1 block w-full form-input">
+                                 </div>
+                             </div>
+                             <div class="mt-6 flex justify-end">
+                                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 flex items-center disabled:bg-blue-400">
+                                     <span class="btn-text">Generate Report</span>
+                                     <i class="fas fa-spinner fa-spin btn-loader hidden ml-2"></i>
+                                 </button>
+                             </div>
+                         </form>
+                        <div id="report-output" class="mt-8 hidden print-area">
+                            <!-- Report content will be injected here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section - REVAMPED -->
+            <section id="section-settings" class="section hidden">
+                <header class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Settings</h2>
+                    <p class="text-gray-500 dark:text-gray-400 mt-1">Manage your account and application preferences.</p>
+                </header>
+                <div class="flex flex-col md:flex-row gap-8">
+                    <!-- Settings Navigation -->
+                    <aside class="md:w-1/4 lg:w-1/5 sticky top-0 self-start">
+                        <nav id="settings-nav" class="space-y-1">
+                            <button data-settings-tab="profile" class="settings-link active w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md">
+                                <i class="fas fa-user w-5 h-5 mr-3"></i>Profile
+                            </button>
+                            <button data-settings-tab="security" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md">
+                                <i class="fas fa-shield-alt w-5 h-5 mr-3"></i>Security
+                            </button>
+                            <button data-settings-tab="notifications" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md">
+                                <i class="fas fa-bell w-5 h-5 mr-3"></i>Notifications
+                            </button>
+                            <button data-settings-tab="appearance" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md">
+                                <i class="fas fa-palette w-5 h-5 mr-3"></i>Appearance
+                            </button>
+                        </nav>
+                    </aside>
+
+                    <!-- Settings Content -->
+                    <main class="flex-1">
+                        <!-- Profile Settings Tab -->
+                        <div id="settings-tab-profile" class="settings-tab-content space-y-6">
+                             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                                <h3 class="text-xl font-semibold mb-1">Public Profile</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">This information could be displayed publicly.</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+                                    <div>
+                                        <label for="firstName" class="block text-sm font-medium">First Name</label>
+                                        <input type="text" id="firstName" class="mt-1 block w-full form-input" placeholder="Harish">
+                                    </div>
+                                    <div>
+                                        <label for="lastName" class="block text-sm font-medium">Last Name</label>
+                                        <input type="text" id="lastName" class="mt-1 block w-full form-input" placeholder="V">
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <label for="bio" class="block text-sm font-medium">About</label>
+                                    <textarea id="bio" rows="3" class="mt-1 block w-full form-input" placeholder="A brief description of yourself."></textarea>
+                                </div>
+                                <div class="text-right mt-6 border-t border-gray-200 dark:border-gray-700 pt-5">
+                                    <button id="save-profile-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-blue-400 disabled:cursor-not-allowed">
+                                        <span class="btn-text">Save Changes</span>
+                                        <i class="fas fa-spinner fa-spin btn-loader hidden"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Settings Tab -->
+                        <div id="settings-tab-security" class="settings-tab-content hidden space-y-6">
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                                <h3 class="text-xl font-semibold mb-1">Password</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Update your password associated with your account.</p>
+                                <div class="space-y-4">
+                                     <div>
+                                        <label for="currentPassword" class="block text-sm font-medium">Current Password</label>
+                                        <input type="password" id="currentPassword" class="mt-1 block w-full form-input">
+                                    </div>
+                                     <div>
+                                        <label for="newPassword" class="block text-sm font-medium">New Password</label>
+                                        <input type="password" id="newPassword" class="mt-1 block w-full form-input">
+                                    </div>
+                                     <div>
+                                        <label for="confirmPassword" class="block text-sm font-medium">Confirm New Password</label>
+                                        <input type="password" id="confirmPassword" class="mt-1 block w-full form-input">
+                                    </div>
+                                </div>
+                                <div class="text-right mt-6 border-t border-gray-200 dark:border-gray-700 pt-5">
+                                    <button id="update-password-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg disabled:bg-blue-400 disabled:cursor-not-allowed">
+                                         <span class="btn-text">Update Password</span>
+                                         <i class="fas fa-spinner fa-spin btn-loader hidden"></i>
+                                    </button>
+                                </div>
+                            </div>
+                             <div class="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-6 rounded-md shadow-sm">
+                                <h3 class="text-xl font-medium text-red-800 dark:text-red-200">Danger Zone</h3>
+                                <p class="mt-2 text-sm">Permanently delete your data. This action cannot be undone.</p>
+                                <div class="mt-4 space-y-3 sm:space-y-0 sm:space-x-3">
+                                    <button data-delete-target="timesheet" class="danger-zone-btn w-full sm:w-auto bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 px-4 rounded-lg border border-red-300">Clear Timesheet Data</button>
+                                    <button data-delete-target="esg" class="danger-zone-btn w-full sm:w-auto bg-red-100 hover:bg-red-200 text-red-700 font-bold py-2 px-4 rounded-lg border border-red-300">Clear ESG Data</button>
+                                    <button data-delete-target="all" class="danger-zone-btn w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Clear All Data</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notifications Settings Tab -->
+                        <div id="settings-tab-notifications" class="settings-tab-content hidden space-y-6">
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                                <h3 class="text-xl font-semibold mb-1">Notifications</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Manage how you receive notifications.</p>
+                                <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    <div class="toggle-container flex items-center justify-between py-3">
+                                        <span class="font-medium">Weekly ESG Digest</span>
+                                        <button class="toggle-switch bg-gray-200 dark:bg-gray-600" data-notification="weeklyDigest">
+                                            <span class="toggle-knob"></span>
+                                        </button>
+                                    </div>
+                                    <div class="toggle-container flex items-center justify-between py-3">
+                                        <span class="font-medium">Regulatory Updates</span>
+                                        <button class="toggle-switch bg-gray-200 dark:bg-gray-600" data-notification="regulatoryUpdates">
+                                            <span class="toggle-knob"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Save button is removed for auto-saving functionality -->
+                            </div>
+                        </div>
+
+                        <!-- Appearance Settings Tab -->
+                        <div id="settings-tab-appearance" class="settings-tab-content hidden space-y-6">
+                             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
+                                <h3 class="text-xl font-semibold mb-1">Appearance</h3>
+                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Customize the look and feel of your interface.</p>
+                                <div id="theme-selector" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                     <button data-theme="light" class="theme-option p-6 rounded-lg border-2">
+                                        <div class="flex items-center justify-center">
+                                            <i class="fas fa-sun w-8 h-8"></i>
+                                            <span class="ml-3 font-semibold">Light</span>
+                                        </div>
+                                    </button>
+                                    <button data-theme="dark" class="theme-option p-6 rounded-lg border-2">
+                                        <div class="flex items-center justify-center">
+                                            <i class="fas fa-moon w-8 h-8"></i>
+                                            <span class="ml-3 font-semibold">Dark</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50 flex items-center justify-center">
+      <div class="p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800">
+        <div class="text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30">
+            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+          </div>
+          <h3 class="text-lg leading-6 font-medium mt-2">Are you sure?</h3>
+          <p id="modal-message" class="text-sm text-gray-500 dark:text-gray-400 px-7 py-3">This will permanently delete data. This action cannot be undone.</p>
+          <div class="px-4 py-3 space-y-4">
+             <div>
+                <label for="confirmation-input" class="block text-sm font-medium text-left">To confirm, type <strong class="select-none">DELETE</strong> below:</label>
+                <input type="text" id="confirmation-input" class="mt-1 w-full form-input" autocomplete="off">
+            </div>
+            <button id="confirm-delete-btn" class="w-full px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-700 disabled:bg-red-300 dark:disabled:bg-red-800 disabled:cursor-not-allowed" disabled>Yes, delete everything</button>
+            <button id="cancel-delete-btn" class="w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add new CSS for toggles and theme options -->
+    <style>
+        .form-input {
+             @apply block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500;
+        }
+        .toggle-switch {
+            @apply relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800;
+        }
+        .toggle-knob {
+            @apply pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0;
+        }
+        .toggle-switch.enabled {
+            @apply bg-blue-600;
+        }
+        .toggle-switch.enabled .toggle-knob {
+            @apply translate-x-5;
+        }
+        .theme-option {
+            @apply border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50 hover:border-gray-400 dark:hover:border-gray-500;
+        }
+        .theme-option.active {
+            @apply border-blue-500 bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500;
+        }
+        .theme-option.active i, .theme-option.active span {
+            @apply text-blue-600 dark:text-blue-400;
+        }
+    </style>
+
+<script type="module">
+    // --- Firebase Imports ---
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot, getDocs, deleteDoc, query, collection, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // --- App Config & Firebase Init ---
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-esg-timesheet-app';
+    let firebaseConfig;
+    try {
+        firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO", projectId: "DEMO" };
+    } catch(e) { console.error("Firebase config error:", e); firebaseConfig = { apiKey: "DEMO", projectId: "DEMO" }; }
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- Global State ---
+    let userId = null;
+    let userSettings = { theme: 'light', notifications: { weeklyDigest: true, regulatoryUpdates: false }, profile: { firstName: '', lastName: '', bio: '' } };
+    let timeLog = [];
+    let esgRecords = [];
+    let isClockedIn = false;
+    let currentLogId = null;
+    let calendarDate = new Date();
+    let selectedDate = new Date();
+    let charts = {};
+    let currentDeletionTarget = null;
+    
+    // --- DOM Elements ---
+    const loadingEl = document.getElementById('loading');
+    const appContainerEl = document.getElementById('app-container');
+    const userDisplayEl = document.getElementById('user-display');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const modal = document.getElementById('confirmation-modal');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+    const toastContainer = document.getElementById('toast-container');
+    
+    // Timesheet Elements
+    const clockInOutBtn = document.getElementById('clock-in-out-btn');
+    const digitalClockEl = document.getElementById('digital-clock');
+    const currentDateEl = document.getElementById('current-date');
+    const calendarEl = document.getElementById('calendar');
+    const monthYearEl = document.getElementById('month-year');
+    const prevMonthBtn = document.getElementById('prev-month');
+    const nextMonthBtn = document.getElementById('next-month');
+    const summaryContentEl = document.getElementById('summary-content');
+    const selectedDateStrEl = document.getElementById('selected-date-str');
+    const reportTableBody = document.getElementById('report-table-body');
+    const downloadCsvBtn = document.getElementById('download-csv-btn');
+
+    // ESG Elements
+    const esgForm = document.getElementById('esg-form');
+    const chartToggles = document.getElementById('chart-toggles');
+    
+    // Reports Elements
+    const reportGeneratorForm = document.getElementById('report-generator-form');
+    const reportOutput = document.getElementById('report-output');
+
+    // Settings Elements
+    const settingsNav = document.getElementById('settings-nav');
+    const settingsTabContents = document.querySelectorAll('.settings-tab-content');
+    const firstNameInput = document.getElementById('firstName');
+    const lastNameInput = document.getElementById('lastName');
+    const bioInput = document.getElementById('bio');
+    const saveProfileBtn = document.getElementById('save-profile-btn');
+    const updatePasswordBtn = document.getElementById('update-password-btn');
+    const newPasswordInput = document.getElementById('newPassword');
+    const confirmPasswordInput = document.getElementById('confirmPassword');
+    const notificationToggles = document.querySelectorAll('.toggle-switch');
+    const dangerZoneButtons = document.querySelectorAll('.danger-zone-btn');
+    const modalMessage = document.getElementById('modal-message');
+    const confirmationInput = document.getElementById('confirmation-input');
+    const themeSelector = document.getElementById('theme-selector');
+
+    // --- UI Helpers ---
+    function showToast(message, type = 'success') {
+        const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+        const toast = document.createElement('div');
+        toast.className = `toast text-white px-6 py-4 rounded-md shadow-lg flex items-center ${bgColor}`;
+        toast.innerHTML = `<i class="fas ${icon} mr-3"></i> <p>${message}</p>`;
+        toastContainer.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    function setButtonLoading(button, isLoading) {
+        const text = button.querySelector('.btn-text');
+        const loader = button.querySelector('.btn-loader');
+        if (isLoading) {
+            button.disabled = true;
+            if(text) text.classList.add('hidden');
+            if(loader) loader.classList.remove('hidden');
+        } else {
+            button.disabled = false;
+            if(text) text.classList.remove('hidden');
+            if(loader) loader.classList.add('hidden');
+        }
+    }
+
+    function timeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + " years ago";
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + " months ago";
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + " days ago";
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + " hours ago";
+        interval = seconds / 60;
+        if (interval > 1) return Math.floor(interval) + " minutes ago";
+        return Math.floor(seconds) + " seconds ago";
+    }
+
+    // --- Core App Logic ---
+    function showSection(sectionId) {
+        document.querySelectorAll('main > section').forEach(section => {
+            section.classList.toggle('hidden', section.id !== `section-${sectionId}`);
+        });
+        navLinks.forEach(link => {
+            link.classList.toggle('active', link.dataset.section === sectionId);
+        });
+        if(sectionId === 'dashboard') {
+            renderAllDashboardElements();
+        }
+    }
+    
+    // --- Data Listeners ---
+    function setupDataListeners() {
+        if (!userId) return;
+        
+        // Timesheet Listener
+        const timeLogsCollection = collection(db, `artifacts/${appId}/users/${userId}/timeLogs`);
+        onSnapshot(timeLogsCollection, (snapshot) => {
+            timeLog = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            timeLog.sort((a, b) => b.clockIn - a.clockIn);
+            updateTimesheetUI();
+        });
+
+        // ESG Data Listener
+        const esgCollection = collection(db, `artifacts/${appId}/users/${userId}/esgData`);
+        onSnapshot(esgCollection, (snapshot) => {
+            esgRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            esgRecords.sort((a, b) => a.month.localeCompare(b.month)); // Sort for charts
+            renderAllDashboardElements();
+            renderRecentActivity(); // Update activity feed in real-time
+        });
+    }
+
+    // --- Timesheet Feature ---
+    function updateClock() {
+        const now = new Date();
+        digitalClockEl.textContent = now.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata' });
+        currentDateEl.textContent = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('dashboard-date').textContent = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    async function handleClockInOut() {
+        if (!userId) return;
+        const timeLogsCollection = collection(db, `artifacts/${appId}/users/${userId}/timeLogs`);
+        const now = new Date();
+
+        if (isClockedIn) {
+            const logDocRef = doc(timeLogsCollection, currentLogId);
+            await setDoc(logDocRef, { clockOut: now.getTime() }, { merge: true });
+        } else {
+            const newLogRef = await addDoc(timeLogsCollection, { clockIn: now.getTime(), clockOut: null, note: "" });
+            currentLogId = newLogRef.id;
+        }
+    }
+
+    function updateTimesheetUI() {
+        const latestLog = timeLog.find(log => !log.clockOut);
+        
+        if (latestLog) {
+            isClockedIn = true;
+            currentLogId = latestLog.id;
+            clockInOutBtn.innerHTML = '<i class="fas fa-stop mr-2"></i>Clock Out';
+            clockInOutBtn.classList.replace('bg-blue-500', 'bg-red-500');
+            clockInOutBtn.classList.replace('hover:bg-blue-600', 'hover:bg-red-600');
+        } else {
+            isClockedIn = false;
+            currentLogId = null;
+            clockInOutBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Clock In';
+            clockInOutBtn.classList.replace('bg-red-500', 'bg-blue-500');
+            clockInOutBtn.classList.replace('hover:bg-red-600', 'hover:bg-blue-600');
+        }
+        renderCalendar();
+        updateSummary();
+        renderReport();
+    }
+
+    function renderCalendar() {
+        calendarEl.innerHTML = '';
+        const year = calendarDate.getFullYear();
+        const month = calendarDate.getMonth();
+        monthYearEl.textContent = `${calendarDate.toLocaleString('default', { month: 'long' })} ${year}`;
+
+        const dayHeaders = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        dayHeaders.forEach(day => {
+            const dayEl = document.createElement('div');
+            dayEl.className = 'text-center font-semibold text-xs text-gray-500 dark:text-gray-400';
+            dayEl.textContent = day;
+            calendarEl.appendChild(dayEl);
+        });
+        
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let i = 0; i < firstDay; i++) {
+            calendarEl.appendChild(document.createElement('div'));
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayEl = document.createElement('button');
+            dayEl.textContent = day;
+            dayEl.className = 'text-center p-2 rounded-full h-9 w-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400';
+            const dayDate = new Date(year, month, day);
+
+            if (dayDate.toDateString() === new Date().toDateString()) dayEl.classList.add('bg-blue-500', 'text-white');
+            else if (dayDate.toDateString() === selectedDate.toDateString()) dayEl.classList.add('bg-blue-200', 'text-blue-800', 'dark:bg-blue-900', 'dark:text-blue-200');
+            else dayEl.classList.add('hover:bg-gray-200', 'dark:hover:bg-gray-700');
+            
+            if (timeLog.some(log => new Date(log.clockIn).toDateString() === dayDate.toDateString())) {
+                 dayEl.classList.add('font-bold', 'relative');
+                 let dot = document.createElement('span');
+                 dot.className = 'absolute bottom-1 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full bg-green-500';
+                 dayEl.appendChild(dot);
+            }
+
+            dayEl.onclick = () => { selectedDate = dayDate; updateTimesheetUI(); };
+            calendarEl.appendChild(dayEl);
+        }
+    }
+    
+    function changeMonth(delta) {
+        calendarDate.setMonth(calendarDate.getMonth() + delta);
+        renderCalendar();
+    }
+    
+    function updateSummary() {
+        selectedDateStrEl.textContent = selectedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+        const logsForDay = timeLog.filter(log => new Date(log.clockIn).toDateString() === selectedDate.toDateString());
+        
+        if (logsForDay.length === 0) {
+            summaryContentEl.innerHTML = 'No work logged for this day.';
+            return;
+        }
+
+        let totalMillis = 0;
+        let summaryHTML = '<ul class="space-y-3">';
+        logsForDay.forEach(log => {
+            const clockInTime = new Date(log.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            let durationStr = 'In progress...';
+            if (log.clockOut) {
+                const clockOutTime = new Date(log.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const duration = log.clockOut - log.clockIn;
+                totalMillis += duration;
+                durationStr = `${clockOutTime} (${formatDuration(duration)})`;
+            }
+            summaryHTML += `<li class="flex justify-between items-center"><span><i class="fas fa-sign-in-alt text-green-500 mr-2"></i>${clockInTime}</span><span><i class="fas fa-sign-out-alt text-red-500 mr-2"></i>${durationStr}</span></li>`;
+        });
+        summaryHTML += '</ul>';
+
+        if(totalMillis > 0) {
+             summaryHTML += `<div class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 font-semibold text-base">Total: ${formatDuration(totalMillis)}</div>`;
+        }
+        summaryContentEl.innerHTML = summaryHTML;
+    }
+
+    function formatDuration(ms) {
+        if (ms < 0) ms = 0;
+        const h = Math.floor(ms / 3600000);
+        const m = Math.floor((ms % 3600000) / 60000);
+        return `${h}h ${m}m`;
+    }
+
+    function renderReport() {
+        reportTableBody.innerHTML = '';
+        if (timeLog.length === 0) {
+            reportTableBody.innerHTML = '<tr><td colspan="5" class="text-center p-6 text-gray-500">No records found.</td></tr>';
+            return;
+        }
+        timeLog.forEach(log => {
+            const clockInDate = new Date(log.clockIn);
+            let duration = 'In progress';
+            let clockOutTimeStr = '-';
+            
+            if(log.clockOut) {
+                duration = formatDuration(log.clockOut - log.clockIn);
+                clockOutTimeStr = new Date(log.clockOut).toLocaleTimeString();
+            }
+            const row = `<tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"><td class="px-6 py-4">${clockInDate.toLocaleDateString()}</td><td class="px-6 py-4">${clockInDate.toLocaleTimeString()}</td><td class="px-6 py-4">${clockOutTimeStr}</td><td class="px-6 py-4">${duration}</td><td class="px-6 py-4">${log.note || ''}</td></tr>`;
+            reportTableBody.innerHTML += row;
+        });
+    }
+
+    function downloadCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,Date,Clock In,Clock Out,Duration (HH:MM),Note\n";
+        timeLog.forEach(log => {
+            const clockIn = new Date(log.clockIn);
+            let clockOutTime = '', duration = '';
+            if (log.clockOut) {
+                clockOutTime = new Date(log.clockOut).toLocaleTimeString();
+                const diffMs = log.clockOut - log.clockIn;
+                duration = `${String(Math.floor(diffMs / 3600000)).padStart(2, '0')}:${String(Math.floor((diffMs % 3600000) / 60000)).padStart(2, '0')}`;
+            }
+            const row = [clockIn.toLocaleDateString(), clockIn.toLocaleTimeString(), clockOutTime, duration, `"${log.note || ''}"`].join(",");
+            csvContent += row + "\r\n";
+        });
+
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csvContent));
+        link.setAttribute("download", `timesheet_report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link); 
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // --- ESG Feature ---
+    async function handleEsgFormSubmit(e) {
+        e.preventDefault();
+        if(!userId) return;
+        const button = e.target.querySelector('button[type="submit"]');
+        setButtonLoading(button, true);
+
+        const esgCollection = collection(db, `artifacts/${appId}/users/${userId}/esgData`);
+        const formData = {
+            month: document.getElementById('month').value,
+            energy: parseFloat(document.getElementById('energy').value) || 0,
+            waste: parseFloat(document.getElementById('waste').value) || 0,
+            diversity: parseFloat(document.getElementById('diversity').value) || 0,
+            safety: parseFloat(document.getElementById('safety').value) || 0,
+            compliance: parseFloat(document.getElementById('compliance').value) || 0,
+            submittedAt: new Date().getTime(), // Add timestamp for real-time feed
+        };
+        try {
+            await addDoc(esgCollection, formData);
+            esgForm.reset();
+            showToast('ESG data submitted successfully!');
+        } catch (error) {
+            console.error("Error submitting ESG data:", error);
+            showToast('Failed to submit data.', 'error');
+        } finally {
+             setButtonLoading(button, false);
+        }
+    }
+    
+    function renderRecentActivity() {
+        const feedEl = document.getElementById('recent-activity-feed');
+        feedEl.innerHTML = ''; // Clear existing content
+
+        if (esgRecords.length === 0) {
+            feedEl.innerHTML = `<p class="text-gray-500 dark:text-gray-400 p-3">No recent activity.</p>`;
+            return;
+        }
+
+        const recentActivities = [...esgRecords]
+            .filter(r => r.submittedAt)
+            .sort((a, b) => b.submittedAt - a.submittedAt)
+            .slice(0, 3);
+
+        if (recentActivities.length === 0) {
+             feedEl.innerHTML = `<p class="text-gray-500 dark:text-gray-400 p-3">No recent submissions found.</p>`;
+             return;
+        }
+
+        recentActivities.forEach(record => {
+            const activityDate = new Date(record.submittedAt);
+            const activityEl = document.createElement('div');
+            activityEl.className = 'flex items-center p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg';
+            activityEl.innerHTML = `
+                <i class="fas fa-check-circle text-green-500 mr-4"></i>
+                <div>
+                    <p>New <strong>ESG Data</strong> submitted for <strong>${new Date(record.month + '-02').toLocaleString('default', { month: 'long', year: 'numeric' })}</strong>.</p>
+                     <p class="text-xs text-gray-500 dark:text-gray-400">${timeAgo(activityDate)}</p>
+                </div>
+            `;
+            feedEl.appendChild(activityEl);
+        });
+    }
+
+    // --- Reports Feature ---
+    function handleEsgReportGeneration(e) {
+        e.preventDefault();
+        const reportBtn = e.target.querySelector('button[type="submit"]');
+        setButtonLoading(reportBtn, true);
+
+        const reportType = document.getElementById('report-type').value;
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+
+        if (!startDate || !endDate) {
+            showToast("Please select a start and end date.", "error");
+            setButtonLoading(reportBtn, false);
+            return;
+        }
+        
+        // Filter esgRecords based on the selected date range
+        const startMonth = startDate.substring(0, 7);
+        const endMonth = endDate.substring(0, 7);
+        const filteredData = esgRecords.filter(record => record.month >= startMonth && record.month <= endMonth);
+
+        if (filteredData.length === 0) {
+            reportOutput.innerHTML = `<p class="text-center text-gray-600 dark:text-gray-400 py-8">No data found for the selected period.</p>`;
+        } else {
+            const reportHTML = generateEsgReportHTML(reportType, filteredData, startDate, endDate);
+            reportOutput.innerHTML = reportHTML;
+        }
+        reportOutput.classList.remove('hidden');
+        setButtonLoading(reportBtn, false);
+    }
+
+    function generateEsgReportHTML(reportType, data, startDate, endDate) {
+        let title = `${reportType} Report`;
+        let summaryHTML = '';
+        let tableHeaders = [];
+        let tableRows = [];
+
+        if (reportType === 'Energy Consumption Analysis') {
+            title = 'Energy Consumption Analysis';
+            tableHeaders = ['Month', 'Energy Consumption (kWh)'];
+            tableRows = data.map(d => `
+                <tr class="border-b dark:border-gray-700">
+                    <td class="p-3">${d.month}</td><td class="p-3">${d.energy.toLocaleString()}</td>
+                </tr>`);
+            const totalValue = data.reduce((acc, item) => acc + item.energy, 0);
+            summaryHTML = `<div class="grid grid-cols-2 gap-4 mb-6 text-center"><div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"><p class="text-sm text-gray-500 dark:text-gray-400">Total Records</p><p class="text-2xl font-bold">${data.length}</p></div><div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"><p class="text-sm text-gray-500 dark:text-gray-400">Total Consumption</p><p class="text-2xl font-bold">${totalValue.toLocaleString()} kWh</p></div></div>`;
+        } else if (reportType === 'Waste Recycling Trends') {
+            title = 'Waste Recycling Trends';
+            tableHeaders = ['Month', 'Waste Recycled (%)'];
+            tableRows = data.map(d => `
+                <tr class="border-b dark:border-gray-700">
+                    <td class="p-3">${d.month}</td><td class="p-3">${d.waste}%</td>
+                </tr>`);
+            const avgValue = data.length > 0 ? data.reduce((acc, item) => acc + item.waste, 0) / data.length : 0;
+            summaryHTML = `<div class="grid grid-cols-2 gap-4 mb-6 text-center"><div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"><p class="text-sm text-gray-500 dark:text-gray-400">Total Records</p><p class="text-2xl font-bold">${data.length}</p></div><div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"><p class="text-sm text-gray-500 dark:text-gray-400">Average Rate</p><p class="text-2xl font-bold">${avgValue.toFixed(2)}%</p></div></div>`;
+        } else { // Annual Summary
+            title = 'Annual ESG Summary';
+            tableHeaders = ['Month', 'Energy (kWh)', 'Waste (%)', 'Diversity (%)', 'Safety Inc.', 'Compliance (%)'];
+            tableRows = data.map(d => `
+                <tr class="border-b dark:border-gray-700">
+                    <td class="p-3">${d.month}</td><td class="p-3">${d.energy.toLocaleString()}</td><td class="p-3">${d.waste}</td><td class="p-3">${d.diversity}</td><td class="p-3">${d.safety}</td><td class="p-3">${d.compliance}</td>
+                </tr>`);
+            summaryHTML = `<div class="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"><p class="text-lg text-center">Found ${data.length} monthly records for the selected period.</p></div>`;
+        }
+
+        const tableHTML = `<table class="w-full text-left"><thead><tr class="bg-gray-100 dark:bg-gray-700 border-b dark:border-gray-600"><th class="p-4">${tableHeaders.join('</th><th class="p-4">')}</th></tr></thead><tbody>${tableRows.join('')}</tbody></table>`;
+        return `<div class="no-print mb-4 flex justify-between items-center"><h3 class="text-xl font-semibold">${title}</h3><button onclick="window.print()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm">Print</button></div><p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Period: ${startDate} to ${endDate}</p>${summaryHTML}${tableHTML}`;
+    }
+
+    function setDefaultReportDates() {
+        document.getElementById('end-date').valueAsDate = new Date();
+        let lastYear = new Date();
+        lastYear.setFullYear(lastYear.getFullYear() - 1);
+        document.getElementById('start-date').valueAsDate = lastYear;
+    }
+
+    // --- Dashboard Charting & Data Calculation ---
+    function calculateEsgScore(record) {
+        if (!record) return 0;
+        const envScore = ((record.waste || 0) + (100 - ((record.energy || 5000) / 10000 * 100))) / 2;
+        const socScore = ((record.diversity || 0) + (100 - (record.safety || 0) * 10)) / 2;
+        const govScore = record.compliance || 0;
+        return (envScore + socScore + govScore) / 3;
+    }
+
+    function updateTrendElement(containerId, currentValue, previousValue, lowerIsBetter = false) {
+        const container = document.getElementById(containerId);
+        const textEl = document.getElementById(containerId.replace('-container', '-text'));
+
+        if (!container || !isFinite(previousValue) || previousValue === 0) {
+            if (container) container.style.display = 'none';
+            return;
+        }
+        container.style.display = 'flex';
+
+        const icon = container.querySelector('i');
+        const change = ((currentValue - previousValue) / previousValue) * 100;
+
+        if (Math.abs(change) < 0.1) {
+            container.className = 'flex items-center text-sm text-gray-500 dark:text-gray-400';
+            icon.className = 'fas fa-minus mr-1';
+            textEl.textContent = 'No change';
+            return;
+        }
+
+        const isIncrease = change > 0;
+        const isGood = lowerIsBetter ? !isIncrease : isIncrease;
+        
+        container.className = `flex items-center text-sm ${isGood ? 'text-green-500' : 'text-red-500'}`;
+        icon.className = `fas ${isIncrease ? 'fa-arrow-up' : 'fa-arrow-down'} mr-1`;
+        textEl.textContent = `${isIncrease ? '+' : ''}${change.toFixed(1)}% vs last quarter`;
+    }
+
+    function renderAllDashboardElements() {
+        const isDark = userSettings.theme === 'dark';
+        const textColor = isDark ? '#e5e7eb' : '#374151';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+        const labels = esgRecords.map(r => new Date(r.month + '-02').toLocaleString('default', { month: 'short' }));
+        const latestRecord = esgRecords[esgRecords.length - 1];
+
+        if (!latestRecord) { // Handle case with no data
+            document.getElementById('kpi-esg-score').textContent = 'N/A';
+            return;
+        }
+
+        // --- Trend Calculation ---
+        const latestDate = new Date(latestRecord.month + '-02');
+        const prevQuarterDate = new Date(latestDate);
+        prevQuarterDate.setMonth(prevQuarterDate.getMonth() - 3);
+        const prevQuarterYear = prevQuarterDate.getFullYear();
+        const prevQuarterNumber = Math.floor(prevQuarterDate.getMonth() / 3); // 0-3 for Q1-Q4
+
+        const prevQuarterRecords = esgRecords.filter(r => {
+            const d = new Date(r.month + '-02');
+            return d.getFullYear() === prevQuarterYear && Math.floor(d.getMonth() / 3) === prevQuarterNumber;
+        });
+
+        if (prevQuarterRecords.length > 0) {
+            const avgReducer = (key) => (acc, r) => acc + r[key];
+            const avgPrevEnergy = prevQuarterRecords.reduce(avgReducer('energy'), 0) / prevQuarterRecords.length;
+            const avgPrevWaste = prevQuarterRecords.reduce(avgReducer('waste'), 0) / prevQuarterRecords.length;
+            const avgPrevCompliance = prevQuarterRecords.reduce(avgReducer('compliance'), 0) / prevQuarterRecords.length;
+            
+            const avgPrevRecord = {
+                energy: avgPrevEnergy,
+                waste: avgPrevWaste,
+                diversity: prevQuarterRecords.reduce(avgReducer('diversity'), 0) / prevQuarterRecords.length,
+                safety: prevQuarterRecords.reduce(avgReducer('safety'), 0) / prevQuarterRecords.length,
+                compliance: avgPrevCompliance,
+            };
+
+            const prevEsgScore = calculateEsgScore(avgPrevRecord);
+            const currentEsgScore = calculateEsgScore(latestRecord);
+
+            updateTrendElement('kpi-esg-trend-container', currentEsgScore, prevEsgScore);
+            updateTrendElement('kpi-energy-trend-container', latestRecord.energy, avgPrevEnergy, true);
+            updateTrendElement('kpi-waste-trend-container', latestRecord.waste, avgPrevWaste);
+            updateTrendElement('kpi-social-trend-container', latestRecord.compliance, avgPrevCompliance);
+
+        } else {
+            // Hide all trend indicators if no previous data
+            ['kpi-esg-trend-container', 'kpi-energy-trend-container', 'kpi-waste-trend-container', 'kpi-social-trend-container'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.display = 'none';
+            });
+        }
+
+
+        // --- Render Main KPIs ---
+        const overallScore = Math.round(calculateEsgScore(latestRecord)) || 0;
+        document.getElementById('kpi-esg-score').textContent = overallScore;
+        document.getElementById('kpi-esg-text').textContent = `${overallScore}%`;
+        document.getElementById('kpi-energy').innerHTML = `${(latestRecord.energy || 0).toLocaleString()} <span class="text-base font-normal text-gray-500">kWh</span>`;
+        document.getElementById('kpi-waste').textContent = `${latestRecord.waste || 0}%`;
+        document.getElementById('kpi-waste-text').textContent = `${latestRecord.waste || 0}%`;
+        document.getElementById('kpi-social').textContent = `${latestRecord.compliance || 0}%`;
+        document.getElementById('kpi-social-text').textContent = `${latestRecord.compliance || 0}%`;
+        
+        const energyTargetProgress = 100 - ((latestRecord.energy || 0) / 10000 * 100);
+        document.getElementById('kpi-energy-text').textContent = `${Math.round(energyTargetProgress)}%`;
+
+        // --- Render Charts ---
+        const mainChartOptions = {
+            responsive: true, maintainAspectRatio: false,
+            scales: { x: { ticks: { color: textColor }, grid: { color: gridColor } }, y: { ticks: { color: textColor }, grid: { color: gridColor } } },
+            plugins: { legend: { labels: { color: textColor } } }
+        };
+
+        const activeToggle = chartToggles.querySelector('.active').dataset.chart;
+        updateMainChart(activeToggle, labels, mainChartOptions);
+
+        renderDoughnutChart('kpi-esg-chart', overallScore, '#3b82f6');
+        renderDoughnutChart('kpi-energy-chart', energyTargetProgress, '#10b981'); // Target is < 10000
+        renderDoughnutChart('kpi-waste-chart', latestRecord.waste || 0, '#f59e0b');
+        renderDoughnutChart('kpi-social-chart', latestRecord.compliance || 0, '#8b5cf6');
+        renderMetricBreakdownChart();
+        renderInsightsAndAlerts();
+    }
+    
+    function updateMainChart(type, labels, options) {
+        let datasets = [];
+        if (type === 'environmental') {
+            datasets = [
+                { label: 'Energy (kWh)', data: esgRecords.map(r => r.energy), borderColor: '#16a34a', tension: 0.3, fill: false },
+                { label: 'Waste Recycled (%)', data: esgRecords.map(r => r.waste), borderColor: '#65a30d', tension: 0.3, fill: false },
+            ];
+        } else if (type === 'social') {
+            datasets = [
+                { label: 'Workforce Diversity (%)', data: esgRecords.map(r => r.diversity), borderColor: '#2563eb', tension: 0.3, fill: false },
+                { label: 'Safety Incidents', data: esgRecords.map(r => r.safety), borderColor: '#60a5fa', tension: 0.3, fill: false },
+            ];
+        } else { // governance
+             datasets = [
+                { label: 'Compliance Training (%)', data: esgRecords.map(r => r.compliance), borderColor: '#d97706', tension: 0.3, fill: false },
+            ];
+        }
+        renderLineChart('main-dashboard-chart', labels, datasets, options);
+    }
+    
+    function renderMetricBreakdownChart() {
+        const latestRecord = esgRecords[esgRecords.length - 1] || {};
+        const isDark = userSettings.theme === 'dark';
+        const textColor = isDark ? '#e5e7eb' : '#374151';
+        const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+        
+        const energyScore = 100 - Math.min(100, (latestRecord.energy / 10000) * 100); // Target is < 10000
+        const wasteScore = latestRecord.waste || 0;
+        const diversityScore = latestRecord.diversity || 0;
+        const safetyScore = 100 - ((latestRecord.safety || 0) * 20); // 5 incidents = 0 score
+        const complianceScore = latestRecord.compliance || 0;
+
+        const data = {
+            labels: ['Energy', 'Waste', 'Diversity', 'Safety', 'Compliance'],
+            datasets: [{
+                label: 'Metric Score (out of 100)',
+                data: [energyScore, wasteScore, diversityScore, safetyScore, complianceScore],
+                backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6'],
+            }]
+        };
+
+        const options = {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { x: { ticks: { color: textColor }, grid: { color: gridColor }, min: 0, max: 100 }, y: { ticks: { color: textColor }, grid: { color: gridColor } } },
+            plugins: { legend: { display: false } }
+        };
+
+        renderBarChart('metric-breakdown-chart', data, options);
+    }
+    
+    function renderInsightsAndAlerts() {
+        const container = document.getElementById('insights-alerts-container');
+        container.innerHTML = '';
+        const latestRecord = esgRecords[esgRecords.length - 1] || {};
+
+        const alerts = [];
+        // Alert 1: Energy consumption
+        if (latestRecord.energy > 8000) {
+            alerts.push({ type: 'warning', icon: 'fa-bolt', text: `High energy use this month (${latestRecord.energy.toLocaleString()} kWh). Review efficiency measures.` });
+        }
+        // Alert 2: Safety incidents
+        if (latestRecord.safety > 0) {
+            alerts.push({ type: 'danger', icon: 'fa-exclamation-triangle', text: `${latestRecord.safety} safety incident(s) reported. Immediate review required.` });
+        } else {
+             alerts.push({ type: 'success', icon: 'fa-shield-alt', text: `Excellent record: 0 safety incidents reported this month.` });
+        }
+        // Alert 3: Compliance goal
+        if (latestRecord.compliance < 95) {
+             alerts.push({ type: 'info', icon: 'fa-info-circle', text: `Compliance training at ${latestRecord.compliance}%. Push for 100% completion.` });
+        }
+        
+        if (alerts.length === 0) {
+            container.innerHTML = `<div class="md:col-span-3 text-center p-4 text-gray-500">No new insights or alerts.</div>`;
+            return;
+        }
+
+        alerts.forEach(alert => {
+            const colors = {
+                warning: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-400',
+                danger: 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-400',
+                success: 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-400',
+                info: 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-400'
+            };
+            const alertEl = document.createElement('div');
+            alertEl.className = `flex items-start p-4 rounded-lg border-l-4 ${colors[alert.type]}`;
+            alertEl.innerHTML = `<i class="fas ${alert.icon} mt-1 mr-3"></i><p class="text-sm">${alert.text}</p>`;
+            container.appendChild(alertEl);
+        });
+    }
+
+    function renderNewsFeed() {
+        const newsFeed = document.getElementById('esg-news-feed');
+        const newsItems = [
+            { text: "New EU Directive on Corporate Sustainability Due Diligence finalized.", link: "#" },
+            { text: "Global carbon tax framework proposed at UN Summit.", link: "#" },
+            { text: "Report: Companies with high ESG scores show greater financial resilience.", link: "#" },
+        ];
+        newsFeed.innerHTML = newsItems.map(item => `
+            <li class="border-b border-gray-200 dark:border-gray-700 pb-2">
+                <a href="${item.link}" class="hover:text-blue-500 transition-colors">${item.text} <i class="fas fa-external-link-alt text-xs ml-1"></i></a>
+            </li>
+        `).join('');
+    }
+
+    function renderBarChart(canvasId, data, options) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (charts[canvasId]) charts[canvasId].destroy();
+        charts[canvasId] = new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: options,
+        });
+    }
+
+
+    function renderLineChart(canvasId, labels, datasets, options) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (charts[canvasId]) charts[canvasId].destroy();
+        charts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: { labels, datasets },
+            options: options
+        });
+    }
+
+    function renderDoughnutChart(canvasId, score, color) {
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        if (charts[canvasId]) charts[canvasId].destroy();
+        const scoreValue = Math.max(0, Math.min(100, score || 0));
+        charts[canvasId] = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{ 
+                    data: [scoreValue, 100 - scoreValue], 
+                    backgroundColor: [color, userSettings.theme === 'dark' ? '#374151' : '#e5e7eb'], 
+                    borderWidth: 0,
+                    borderRadius: 5,
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, cutout: '75%', plugins: { tooltip: { enabled: false } } }
+        });
+    }
+    
+    // --- Settings Feature ---
+    async function loadUserSettings() {
+        if (!userId) return;
+        const settingsRef = doc(db, `/artifacts/${appId}/users/${userId}/settings/user_settings`);
+        const docSnap = await getDoc(settingsRef);
+
+        if (docSnap.exists()) {
+            const loadedSettings = docSnap.data();
+            userSettings = {
+                ...userSettings,
+                ...loadedSettings,
+                notifications: { ...userSettings.notifications, ...loadedSettings.notifications },
+                profile: { ...userSettings.profile, ...loadedSettings.profile },
+            };
+        }
+        applySettings();
+    }
+
+    function applySettings() {
+        document.documentElement.className = userSettings.theme;
+        updateThemeButtons();
+
+        const displayName = `${userSettings.profile.firstName || ''} ${userSettings.profile.lastName || ''}`.trim();
+        userDisplayEl.textContent = displayName || 'User';
+        firstNameInput.value = userSettings.profile.firstName || '';
+        lastNameInput.value = userSettings.profile.lastName || '';
+        bioInput.value = userSettings.profile.bio || '';
+        
+        notificationToggles.forEach(toggle => {
+            const key = toggle.dataset.notification;
+            const isEnabled = userSettings.notifications[key] || false;
+            toggle.classList.toggle('enabled', isEnabled);
+        });
+        
+        renderAllDashboardElements(); 
+    }
+    
+    async function saveUserSettings() {
+        if (!userId) return;
+        const settingsRef = doc(db, `/artifacts/${appId}/users/${userId}/settings/user_settings`);
+        await setDoc(settingsRef, userSettings, { merge: true });
+    }
+    
+    async function deleteCollection(collPath) {
+        const q = query(collection(db, collPath));
+        const snapshot = await getDocs(q);
+        const promises = [];
+        snapshot.forEach(doc => promises.push(deleteDoc(doc.ref)));
+        await Promise.all(promises);
+    };
+
+    async function deleteTimesheetData() {
+        await deleteCollection(`artifacts/${appId}/users/${userId}/timeLogs`);
+    }
+
+    async function deleteEsgData() {
+        await deleteCollection(`artifacts/${appId}/users/${userId}/esgData`);
+    }
+
+    async function clearAllData() {
+        await Promise.all([deleteTimesheetData(), deleteEsgData()]);
+    }
+
+
+    // --- Event Listeners ---
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => { e.preventDefault(); showSection(e.currentTarget.dataset.section); });
+    });
+
+    chartToggles.addEventListener('click', (e) => {
+        const button = e.target.closest('button');
+        if(!button) return;
+        chartToggles.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        renderAllDashboardElements();
+    });
+
+    settingsNav.addEventListener('click', (e) => {
+        const button = e.target.closest('button');
+        if (!button) return;
+        const tabId = button.dataset.settingsTab;
+        settingsNav.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        settingsTabContents.forEach(content => {
+            content.classList.toggle('hidden', content.id !== `settings-tab-${tabId}`);
+        });
+    });
+
+    saveProfileBtn.addEventListener('click', async () => {
+        setButtonLoading(saveProfileBtn, true);
+        userSettings.profile.firstName = firstNameInput.value;
+        userSettings.profile.lastName = lastNameInput.value;
+        userSettings.profile.bio = bioInput.value;
+        try {
+            await saveUserSettings();
+            applySettings();
+            showToast('Profile saved successfully!');
+        } catch(e) {
+            showToast('Failed to save profile.', 'error');
+        } finally {
+            setButtonLoading(saveProfileBtn, false);
+        }
+    });
+    
+    updatePasswordBtn.addEventListener('click', () => {
+        const newPass = newPasswordInput.value;
+        const confirmPass = confirmPasswordInput.value;
+        if (!newPass || newPass.length < 6) {
+            return showToast('Password must be at least 6 characters long.', 'error');
+        }
+        if (newPass !== confirmPass) {
+            return showToast('New passwords do not match.', 'error');
+        }
+        // In a real app, you would call the Firebase updatePassword method here.
+        // For this demo, we'll simulate success.
+        setButtonLoading(updatePasswordBtn, true);
+        setTimeout(() => {
+            document.getElementById('currentPassword').value = '';
+            newPasswordInput.value = '';
+            confirmPasswordInput.value = '';
+            setButtonLoading(updatePasswordBtn, false);
+            showToast('Password updated successfully (simulated).');
+        }, 1000);
+    });
+
+    notificationToggles.forEach(toggle => {
+        toggle.addEventListener('click', async () => {
+            const wasEnabled = toggle.classList.contains('enabled');
+            toggle.classList.toggle('enabled');
+            const key = toggle.dataset.notification;
+            const isEnabled = !wasEnabled;
+            userSettings.notifications[key] = isEnabled;
+            try {
+                await saveUserSettings();
+                showToast('Notification settings updated.');
+            } catch (e) {
+                showToast('Failed to save settings.', 'error');
+                // Revert visual state on error
+                toggle.classList.toggle('enabled', wasEnabled);
+                userSettings.notifications[key] = wasEnabled;
+            }
+        });
+    });
+
+    dangerZoneButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            currentDeletionTarget = button.dataset.deleteTarget;
+            if (currentDeletionTarget === 'timesheet') {
+                modalMessage.textContent = 'This will permanently delete all your Timesheet data. This action cannot be undone.';
+            } else if (currentDeletionTarget === 'esg') {
+                 modalMessage.textContent = 'This will permanently delete all your ESG data. This action cannot be undone.';
+            } else {
+                 modalMessage.textContent = 'This will permanently delete all your application data. This action cannot be undone.';
+            }
+            confirmationInput.value = '';
+            confirmDeleteBtn.disabled = true;
+            modal.classList.remove('hidden');
+        });
+    });
+
+    confirmationInput.addEventListener('input', () => {
+        confirmDeleteBtn.disabled = confirmationInput.value !== 'DELETE';
+    });
+
+    confirmDeleteBtn.addEventListener('click', async () => {
+        if (confirmationInput.value !== 'DELETE') return;
+
+        setButtonLoading(confirmDeleteBtn, true);
+        try {
+            if (currentDeletionTarget === 'timesheet') {
+                await deleteTimesheetData();
+                showToast('Timesheet data has been cleared.');
+            } else if (currentDeletionTarget === 'esg') {
+                await deleteEsgData();
+                showToast('ESG data has been cleared.');
+            } else if (currentDeletionTarget === 'all') {
+                await clearAllData();
+                showToast('All application data has been cleared.');
+            }
+        } catch (error) {
+            showToast('Failed to clear data.', 'error');
+            console.error("Error clearing data:", error);
+        } finally {
+            modal.classList.add('hidden');
+            currentDeletionTarget = null;
+            setButtonLoading(confirmDeleteBtn, false);
+        }
+    });
+    
+    function updateThemeButtons() {
+        themeSelector.querySelectorAll('.theme-option').forEach(opt => {
+            opt.classList.toggle('active', opt.dataset.theme === userSettings.theme);
+        });
+    }
+
+    themeSelector.addEventListener('click', async (e) => {
+        const button = e.target.closest('button.theme-option');
+        if (!button) return;
+        userSettings.theme = button.dataset.theme;
+        document.documentElement.className = userSettings.theme;
+        updateThemeButtons();
+        await saveUserSettings();
+        renderAllDashboardElements();
+    });
+    
+    cancelDeleteBtn.addEventListener('click', () => modal.classList.add('hidden'));
+    
+    clockInOutBtn.addEventListener('click', handleClockInOut);
+    prevMonthBtn.addEventListener('click', () => changeMonth(-1));
+    nextMonthBtn.addEventListener('click', () => changeMonth(1));
+    downloadCsvBtn.addEventListener('click', downloadCSV);
+    esgForm.addEventListener('submit', handleEsgFormSubmit);
+    reportGeneratorForm.addEventListener('submit', handleEsgReportGeneration);
+    
+    // --- Initialization ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            userId = user.uid;
+            await loadUserSettings();
+            setupDataListeners();
+            setInterval(updateClock, 1000);
+            updateClock();
+            setDefaultReportDates();
+            renderNewsFeed();
+            loadingEl.classList.add('hidden');
+            appContainerEl.classList.remove('hidden');
+            showSection('dashboard');
+        }
+    });
+
+    (async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else if (!auth.currentUser) {
+          await signInAnonymously(auth);
+        }
+      } catch(error) {
+          console.error("Authentication failed:", error);
+          loadingEl.querySelector('p').textContent = 'Authentication Failed.';
+      }
+    })();
+
+</script>
+</body>
+</html>
+
