@@ -121,159 +121,171 @@
                     <p class="text-gray-500 dark:text-gray-400 mt-1" id="dashboard-date">Tuesday, 7 October 2025</p>
                 </header>
 
-                <!-- KPI Cards -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <!-- Overall ESG Score Card -->
-                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Overall ESG Score</p>
-                            <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-esg-score">0</p>
-                             <div class="flex items-center text-sm" id="kpi-esg-trend-container">
-                                <i class="fas fa-arrow-up mr-1"></i>
-                                <span id="kpi-esg-trend-text">--% vs last quarter</span>
-                            </div>
-                        </div>
-                        <div class="relative w-20 h-20">
-                            <canvas id="kpi-esg-chart"></canvas>
-                             <div id="kpi-esg-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-blue-500">0%</div>
-                        </div>
-                    </div>
-                    <!-- Energy Consumption Card -->
-                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Energy Consumption</p>
-                            <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-energy">0 <span class="text-base font-normal text-gray-500">kWh</span></p>
-                            <div class="flex items-center text-sm" id="kpi-energy-trend-container">
-                                <i class="fas fa-arrow-down mr-1"></i>
-                                <span id="kpi-energy-trend-text">--% vs last quarter</span>
-                            </div>
-                        </div>
-                         <div class="relative w-20 h-20">
-                            <canvas id="kpi-energy-chart"></canvas>
-                            <div id="kpi-energy-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-green-500">0%</div>
-                        </div>
-                    </div>
-                    <!-- Waste Recycled Card -->
-                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Waste Recycled</p>
-                            <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-waste">0%</p>
-                            <div class="flex items-center text-sm" id="kpi-waste-trend-container">
-                                <i class="fas fa-arrow-up mr-1"></i>
-                                <span id="kpi-waste-trend-text">--% vs last quarter</span>
-                            </div>
-                        </div>
-                         <div class="relative w-20 h-20">
-                            <canvas id="kpi-waste-chart"></canvas>
-                             <div id="kpi-waste-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-yellow-500">0%</div>
-                        </div>
-                    </div>
-                    <!-- Social Compliance Card -->
-                    <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Social Compliance</p>
-                            <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-social">0%</p>
-                             <div class="flex items-center text-sm" id="kpi-social-trend-container">
-                                <i class="fas fa-arrow-down mr-1"></i>
-                                <span id="kpi-social-trend-text">--% vs last quarter</span>
-                            </div>
-                        </div>
-                         <div class="relative w-20 h-20">
-                            <canvas id="kpi-social-chart"></canvas>
-                             <div id="kpi-social-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-purple-500">0%</div>
-                        </div>
-                    </div>
+                <!-- No Data Placeholder -->
+                <div id="dashboard-no-data" class="hidden text-center py-16 bg-white dark:bg-gray-800 rounded-xl shadow-md">
+                    <i class="fas fa-chart-line fa-3x text-gray-400 dark:text-gray-500"></i>
+                    <h3 class="mt-4 text-xl font-semibold text-gray-800 dark:text-gray-200">Welcome to Your ESG Command Center</h3>
+                    <p class="mt-2 text-gray-500 dark:text-gray-400">There is no data to display yet. Start by logging your first record.</p>
+                    <button id="add-first-record-btn" class="mt-6 bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700">
+                        Add First ESG Record
+                    </button>
                 </div>
-
-                <!-- Key Insights & Alerts -->
-                <div class="mt-8">
-                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Key Insights & Alerts</h3>
-                    <div id="insights-alerts-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <!-- Dynamic alerts will be injected here -->
-                    </div>
-                </div>
-
-                <!-- Main Content Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
-                    <!-- Left Side: Main Chart & Recent Activity -->
-                    <div class="lg:col-span-3 space-y-6">
-                        <!-- Interactive Main Chart -->
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                             <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-xl font-semibold">Performance Trends</h3>
-                                <div id="chart-toggles" class="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
-                                    <button data-chart="environmental" class="chart-toggle active px-3 py-1 text-sm font-medium rounded-md">Environmental</button>
-                                    <button data-chart="social" class="chart-toggle px-3 py-1 text-sm font-medium rounded-md">Social</button>
-                                    <button data-chart="governance" class="chart-toggle px-3 py-1 text-sm font-medium rounded-md">Governance</button>
+                
+                <div id="dashboard-main-content" class="hidden">
+                    <!-- KPI Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Overall ESG Score Card -->
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Overall ESG Score</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-esg-score">0</p>
+                                <div class="flex items-center text-sm" id="kpi-esg-trend-container">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    <span id="kpi-esg-trend-text">--% vs last quarter</span>
                                 </div>
                             </div>
-                            <div class="h-80"><canvas id="main-dashboard-chart"></canvas></div>
+                            <div class="relative w-20 h-20">
+                                <canvas id="kpi-esg-chart"></canvas>
+                                <div id="kpi-esg-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-blue-500">0%</div>
+                            </div>
                         </div>
-                        
-                         <!-- Recent Activity -->
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                            <h3 class="text-xl font-semibold mb-4">Recent Activity</h3>
-                            <div id="recent-activity-feed" class="space-y-4">
-                                <!-- Real-time content is injected here -->
+                        <!-- Energy Consumption Card -->
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Energy Consumption</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-energy">0 <span class="text-base font-normal text-gray-500">kWh</span></p>
+                                <div class="flex items-center text-sm" id="kpi-energy-trend-container">
+                                    <i class="fas fa-arrow-down mr-1"></i>
+                                    <span id="kpi-energy-trend-text">--% vs last quarter</span>
+                                </div>
+                            </div>
+                            <div class="relative w-20 h-20">
+                                <canvas id="kpi-energy-chart"></canvas>
+                                <div id="kpi-energy-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-green-500">0%</div>
+                            </div>
+                        </div>
+                        <!-- Waste Recycled Card -->
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Waste Recycled</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-waste">0%</p>
+                                <div class="flex items-center text-sm" id="kpi-waste-trend-container">
+                                    <i class="fas fa-arrow-up mr-1"></i>
+                                    <span id="kpi-waste-trend-text">--% vs last quarter</span>
+                                </div>
+                            </div>
+                            <div class="relative w-20 h-20">
+                                <canvas id="kpi-waste-chart"></canvas>
+                                <div id="kpi-waste-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-yellow-500">0%</div>
+                            </div>
+                        </div>
+                        <!-- Social Compliance Card -->
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl shadow-md flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Social Compliance</p>
+                                <p class="text-3xl font-bold text-gray-900 dark:text-white" id="kpi-social">0%</p>
+                                <div class="flex items-center text-sm" id="kpi-social-trend-container">
+                                    <i class="fas fa-arrow-down mr-1"></i>
+                                    <span id="kpi-social-trend-text">--% vs last quarter</span>
+                                </div>
+                            </div>
+                            <div class="relative w-20 h-20">
+                                <canvas id="kpi-social-chart"></canvas>
+                                <div id="kpi-social-text" class="absolute inset-0 flex items-center justify-center text-xl font-bold text-purple-500">0%</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right Side: Initiatives, Breakdown, News -->
-                    <div class="lg:col-span-2 space-y-6">
-                         <!-- Key Initiatives -->
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                            <h3 class="text-xl font-semibold mb-4">Key Initiatives</h3>
-                            <ul class="space-y-5">
-                                <li class="initiative-item">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <p class="font-medium">Reduce Carbon Footprint by 15%</p>
-                                        <p class="text-sm font-bold text-green-500">75%</p>
-                                    </div>
-                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                                        <div class="bg-green-500 h-2.5 rounded-full" style="width: 75%;"></div>
-                                    </div>
-                                </li>
-                                <li class="initiative-item">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <p class="font-medium">Increase Board Diversity to 40%</p>
-                                        <p class="text-sm font-bold text-blue-500">90%</p>
-                                    </div>
-                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                                        <div class="bg-blue-500 h-2.5 rounded-full" style="width: 90%;"></div>
-                                    </div>
-                                </li>
-                                 <li class="initiative-item">
-                                    <div class="flex justify-between items-center mb-1">
-                                        <p class="font-medium">Achieve 90% Waste Recycling</p>
-                                        <p class="text-sm font-bold text-yellow-500">82%</p>
-                                    </div>
-                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                                        <div class="bg-yellow-500 h-2.5 rounded-full" style="width: 82%;"></div>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <!-- Metric Breakdown -->
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                            <h3 class="text-xl font-semibold mb-4">Latest Month Metric Breakdown</h3>
-                            <div class="h-64"><canvas id="metric-breakdown-chart"></canvas></div>
-                        </div>
-                        <!-- ESG News -->
-                        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
-                             <h3 class="text-xl font-semibold mb-4">ESG News & Regulatory Updates</h3>
-                             <ul id="esg-news-feed" class="space-y-3 text-sm">
-                                <!-- News items injected here -->
-                             </ul>
+                    <!-- Key Insights & Alerts -->
+                    <div class="mt-8">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Key Insights & Alerts</h3>
+                        <div id="insights-alerts-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Dynamic alerts will be injected here -->
                         </div>
                     </div>
-                </div>
 
-                <style>
-                    #chart-toggles .chart-toggle.active {
-                        @apply bg-white text-blue-600 shadow-sm dark:bg-gray-800 dark:text-blue-400;
-                    }
-                </style>
+                    <!-- Main Content Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mt-8">
+                        <!-- Left Side: Main Chart & Recent Activity -->
+                        <div class="lg:col-span-3 space-y-6">
+                            <!-- Interactive Main Chart -->
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-xl font-semibold">Performance Trends</h3>
+                                    <div id="chart-toggles" class="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                                        <button data-chart="environmental" class="chart-toggle active px-3 py-1 text-sm font-medium rounded-md">Environmental</button>
+                                        <button data-chart="social" class="chart-toggle px-3 py-1 text-sm font-medium rounded-md">Social</button>
+                                        <button data-chart="governance" class="chart-toggle px-3 py-1 text-sm font-medium rounded-md">Governance</button>
+                                    </div>
+                                </div>
+                                <div class="h-80"><canvas id="main-dashboard-chart"></canvas></div>
+                            </div>
+                            
+                            <!-- Recent Activity -->
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                <h3 class="text-xl font-semibold mb-4">Recent Activity</h3>
+                                <div id="recent-activity-feed" class="space-y-4">
+                                    <!-- Real-time content is injected here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Side: Initiatives, Breakdown, News -->
+                        <div class="lg:col-span-2 space-y-6">
+                            <!-- Key Initiatives -->
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                <h3 class="text-xl font-semibold mb-4">Key Initiatives</h3>
+                                <ul class="space-y-5">
+                                    <li class="initiative-item">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <p class="font-medium">Reduce Carbon Footprint by 15%</p>
+                                            <p class="text-sm font-bold text-green-500">75%</p>
+                                        </div>
+                                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                            <div class="bg-green-500 h-2.5 rounded-full" style="width: 75%;"></div>
+                                        </div>
+                                    </li>
+                                    <li class="initiative-item">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <p class="font-medium">Increase Board Diversity to 40%</p>
+                                            <p class="text-sm font-bold text-blue-500">90%</p>
+                                        </div>
+                                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                            <div class="bg-blue-500 h-2.5 rounded-full" style="width: 90%;"></div>
+                                        </div>
+                                    </li>
+                                    <li class="initiative-item">
+                                        <div class="flex justify-between items-center mb-1">
+                                            <p class="font-medium">Achieve 90% Waste Recycling</p>
+                                            <p class="text-sm font-bold text-yellow-500">82%</p>
+                                        </div>
+                                        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                                            <div class="bg-yellow-500 h-2.5 rounded-full" style="width: 82%;"></div>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                            <!-- Metric Breakdown -->
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                <h3 class="text-xl font-semibold mb-4">Latest Month Metric Breakdown</h3>
+                                <div class="h-64"><canvas id="metric-breakdown-chart"></canvas></div>
+                            </div>
+                            <!-- ESG News -->
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                                <h3 class="text-xl font-semibold mb-4">ESG News & Regulatory Updates</h3>
+                                <ul id="esg-news-feed" class="space-y-3 text-sm">
+                                    <!-- News items injected here -->
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <style>
+                        #chart-toggles .chart-toggle.active {
+                            @apply bg-white text-blue-600 shadow-sm dark:bg-gray-800 dark:text-blue-400;
+                        }
+                    </style>
+                </div>
             </section>
 
             <!-- Data Entry Section -->
@@ -681,7 +693,8 @@
     // ESG Elements
     const esgForm = document.getElementById('esg-form');
     const chartToggles = document.getElementById('chart-toggles');
-    
+    const addFirstRecordBtn = document.getElementById('add-first-record-btn');
+
     // Reports Elements
     const reportGeneratorForm = document.getElementById('report-generator-form');
     const reportOutput = document.getElementById('report-output');
@@ -1096,15 +1109,15 @@
 
     function updateTrendElement(containerId, currentValue, previousValue, lowerIsBetter = false) {
         const container = document.getElementById(containerId);
-        const textEl = document.getElementById(containerId.replace('-container', '-text'));
+        const textEl = container.querySelector('span');
+        const icon = container.querySelector('i');
 
-        if (!container || !isFinite(previousValue) || previousValue === 0) {
-            if (container) container.style.display = 'none';
+        if (!isFinite(previousValue) || previousValue === 0) {
+            container.style.display = 'none';
             return;
         }
         container.style.display = 'flex';
 
-        const icon = container.querySelector('i');
         const change = ((currentValue - previousValue) / previousValue) * 100;
 
         if (Math.abs(change) < 0.1) {
@@ -1123,17 +1136,24 @@
     }
 
     function renderAllDashboardElements() {
+        const noDataEl = document.getElementById('dashboard-no-data');
+        const mainContentEl = document.getElementById('dashboard-main-content');
+
+        if (esgRecords.length === 0) {
+            noDataEl.classList.remove('hidden');
+            mainContentEl.classList.add('hidden');
+            return;
+        }
+
+        noDataEl.classList.add('hidden');
+        mainContentEl.classList.remove('hidden');
+
         const isDark = userSettings.theme === 'dark';
         const textColor = isDark ? '#e5e7eb' : '#374151';
         const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
 
         const labels = esgRecords.map(r => new Date(r.month + '-02').toLocaleString('default', { month: 'short' }));
         const latestRecord = esgRecords[esgRecords.length - 1];
-
-        if (!latestRecord) { // Handle case with no data
-            document.getElementById('kpi-esg-score').textContent = 'N/A';
-            return;
-        }
 
         // --- Trend Calculation ---
         const latestDate = new Date(latestRecord.month + '-02');
@@ -1170,15 +1190,12 @@
             updateTrendElement('kpi-social-trend-container', latestRecord.compliance, avgPrevCompliance);
 
         } else {
-            // Hide all trend indicators if no previous data
             ['kpi-esg-trend-container', 'kpi-energy-trend-container', 'kpi-waste-trend-container', 'kpi-social-trend-container'].forEach(id => {
                 const el = document.getElementById(id);
                 if(el) el.style.display = 'none';
             });
         }
 
-
-        // --- Render Main KPIs ---
         const overallScore = Math.round(calculateEsgScore(latestRecord)) || 0;
         document.getElementById('kpi-esg-score').textContent = overallScore;
         document.getElementById('kpi-esg-text').textContent = `${overallScore}%`;
@@ -1191,7 +1208,6 @@
         const energyTargetProgress = 100 - ((latestRecord.energy || 0) / 10000 * 100);
         document.getElementById('kpi-energy-text').textContent = `${Math.round(energyTargetProgress)}%`;
 
-        // --- Render Charts ---
         const mainChartOptions = {
             responsive: true, maintainAspectRatio: false,
             scales: { x: { ticks: { color: textColor }, grid: { color: gridColor } }, y: { ticks: { color: textColor }, grid: { color: gridColor } } },
@@ -1567,6 +1583,7 @@
     downloadCsvBtn.addEventListener('click', downloadCSV);
     esgForm.addEventListener('submit', handleEsgFormSubmit);
     reportGeneratorForm.addEventListener('submit', handleEsgReportGeneration);
+    addFirstRecordBtn.addEventListener('click', () => showSection('data-entry'));
     
     // --- Initialization ---
     onAuthStateChanged(auth, async (user) => {
