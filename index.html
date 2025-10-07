@@ -17,7 +17,10 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Prevent body scrolling */
+            overflow-x: hidden;
+        }
+        main {
+            height: 100vh;
         }
         .nav-link {
             transition: all 0.2s ease-in-out;
@@ -74,6 +77,11 @@
         .modal-backdrop {
             transition: opacity 0.3s ease-in-out;
         }
+
+        /* Sidebar transition for mobile */
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200">
@@ -83,15 +91,51 @@
     <div id="loading" class="flex items-center justify-center min-h-screen">
         <div class="text-center">
             <i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>
-            <p class="mt-4 text-lg">Loading Dashboard...</p>
+            <p class="mt-4 text-lg">Loading Application...</p>
+        </div>
+    </div>
+    
+    <!-- AUTHENTICATION CONTAINER -->
+    <div id="auth-container" class="hidden min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div class="w-full max-w-md bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8">
+            <div class="text-center mb-8">
+                 <h1 class="text-3xl font-bold text-gray-800 dark:text-white"><i class="fas fa-leaf mr-2 text-green-500"></i>ESG Tracker</h1>
+                 <p class="text-gray-500 dark:text-gray-400 mt-2">Sign in or create an account to continue</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="space-y-4">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium">Email Address</label>
+                        <input type="email" id="login-email" required class="mt-1 w-full form-input" autocomplete="email">
+                    </div>
+                     <div>
+                        <label for="login-password" class="block text-sm font-medium">Password</label>
+                        <input type="password" id="login-password" required class="mt-1 w-full form-input" autocomplete="current-password">
+                    </div>
+                </div>
+                 <p id="auth-error" class="text-red-500 text-sm mt-4 text-center hidden"></p>
+                <button type="submit" class="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                    Sign In
+                </button>
+            </form>
+            
+            <p class="text-center text-sm text-gray-500 mt-6">
+                Don't have an account? <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Sign up</a>
+            </p>
         </div>
     </div>
 
-    <div id="app-container" class="hidden md:flex h-screen">
+
+    <div id="app-container" class="hidden">
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
         <!-- Sidebar Navigation -->
-        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0">
-            <div class="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <aside id="sidebar" class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0 fixed md:relative h-full z-40 transform -translate-x-full md:translate-x-0">
+            <div class="h-16 flex items-center justify-between px-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <h1 class="text-xl font-bold"><i class="fas fa-leaf mr-2 text-green-500"></i>ESG Tracker</h1>
+                 <button id="sidebar-close-btn" class="md:hidden text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <nav class="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
                 <a href="#" data-section="dashboard" class="nav-link active flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg">
@@ -102,6 +146,9 @@
                 </a>
                  <a href="#" data-section="goals" class="nav-link flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg">
                     <i class="fas fa-bullseye w-6 h-6 mr-3"></i>Goals
+                </a>
+                 <a href="#" data-section="documents" class="nav-link flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg">
+                    <i class="fas fa-file-alt w-6 h-6 mr-3"></i>Documents
                 </a>
                 <a href="#" data-section="timesheet" class="nav-link flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 rounded-lg">
                     <i class="fas fa-clock w-6 h-6 mr-3"></i>Timesheet
@@ -114,21 +161,32 @@
                 </a>
             </nav>
             <div class="px-4 py-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-                 <p class="text-xs text-gray-500 dark:text-gray-400">Welcome,</p>
+                 <p class="text-xs text-gray-500 dark:text-gray-400">Signed in as,</p>
                  <p id="user-display" class="font-medium text-sm truncate">user</p>
+                 <button id="logout-btn" class="mt-2 w-full text-left text-sm text-red-500 hover:text-red-700 font-medium">Logout</button>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <main class="flex-1 w-full overflow-y-auto">
+             <!-- Mobile Header -->
+            <header class="md:hidden sticky top-0 bg-white dark:bg-gray-800/80 backdrop-blur-sm z-20 flex items-center justify-between p-4 border-b dark:border-gray-700">
+                <button id="sidebar-open-btn" class="text-gray-800 dark:text-gray-200">
+                    <i class="fas fa-bars fa-lg"></i>
+                </button>
+                <h1 class="text-lg font-bold">ESG Tracker</h1>
+                <div></div>
+            </header>
+            
+            <div class="p-6 lg:p-8">
             <!-- ESG Dashboard Section -->
             <section id="section-dashboard" class="section">
-                <header class="mb-8 flex justify-between items-center">
+                <header class="mb-8 flex flex-col md:flex-row justify-between md:items-center">
                     <div>
                         <h2 class="text-3xl font-bold text-gray-900 dark:text-white">ESG Command Center</h2>
                         <p class="text-gray-500 dark:text-gray-400 mt-1" id="dashboard-date">Tuesday, 7 October 2025</p>
                     </div>
-                    <button id="ai-insights-btn" class="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 flex items-center">
+                    <button id="ai-insights-btn" class="mt-4 md:mt-0 bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700 flex items-center justify-center">
                         <i class="fas fa-magic mr-2"></i>Get AI Insights
                     </button>
                 </header>
@@ -294,6 +352,54 @@
                     <!-- Goals will be injected here -->
                 </div>
             </section>
+            
+            <!-- DOCUMENTS SECTION -->
+            <section id="section-documents" class="section hidden">
+                 <header class="mb-8 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Document Hub</h2>
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">Manage all your ESG reports and certifications.</p>
+                    </div>
+                    <button id="upload-doc-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center">
+                        <i class="fas fa-upload mr-2"></i>Upload Document
+                    </button>
+                </header>
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md">
+                     <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Document Name</th>
+                                    <th scope="col" class="px-6 py-3">Category</th>
+                                    <th scope="col" class="px-6 py-3">Upload Date</th>
+                                    <th scope="col" class="px-6 py-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="documents-table-body">
+                                <!-- Simulated document data -->
+                                <tr class="border-b dark:border-gray-700">
+                                    <td class="px-6 py-4 font-medium">Annual Sustainability Report 2024.pdf</td>
+                                    <td class="px-6 py-4">Annual Report</td>
+                                    <td class="px-6 py-4">2025-08-15</td>
+                                    <td class="px-6 py-4 flex space-x-4">
+                                        <button class="text-blue-500 hover:text-blue-700"><i class="fas fa-download"></i></button>
+                                        <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                                <tr class="border-b dark:border-gray-700">
+                                    <td class="px-6 py-4 font-medium">ISO 14001 Certification.pdf</td>
+                                    <td class="px-6 py-4">Certification</td>
+                                    <td class="px-6 py-4">2025-07-22</td>
+                                     <td class="px-6 py-4 flex space-x-4">
+                                        <button class="text-blue-500 hover:text-blue-700"><i class="fas fa-download"></i></button>
+                                        <button class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
 
 
             <!-- Data Entry Section -->
@@ -351,12 +457,12 @@
 
             <!-- Timesheet Section -->
             <section id="section-timesheet" class="section hidden">
-                <header class="mb-6 flex justify-between items-center">
+                <header class="mb-6 flex flex-col md:flex-row justify-between md:items-center">
                     <div>
                         <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Timesheet</h2>
                         <p class="text-gray-500 dark:text-gray-400 mt-1">Track your work hours efficiently.</p>
                     </div>
-                    <div id="clock-container" class="text-right">
+                    <div id="clock-container" class="text-right mt-4 md:mt-0">
                          <div class="text-3xl font-bold" id="digital-clock">12:00:00 PM</div>
                          <div class="text-sm text-gray-500 dark:text-gray-400" id="current-date">Tuesday, Oct 7, 2025</div>
                     </div>
@@ -647,6 +753,7 @@
                     </main>
                 </div>
             </section>
+        </div>
         </main>
     </div>
     
@@ -746,7 +853,12 @@
 <script type="module">
     // --- Firebase Imports ---
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { 
+        getAuth, onAuthStateChanged, createUserWithEmailAndPassword, 
+        signInWithEmailAndPassword, signOut, reauthenticateWithCredential, 
+        EmailAuthProvider, updatePassword, linkWithCredential, signInAnonymously,
+        sendPasswordResetEmail
+    } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
     import { getFirestore, doc, setDoc, onSnapshot, getDocs, deleteDoc, query, collection, addDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     // --- App Config & Firebase Init ---
@@ -780,9 +892,11 @@
     let charts = {};
     let currentDeletionTarget = null;
     let itemToDeleteId = null; 
+    let unsubscribeListeners = [];
     
     // --- DOM Elements ---
     const loadingEl = document.getElementById('loading');
+    const authContainer = document.getElementById('auth-container');
     const appContainerEl = document.getElementById('app-container');
     const userDisplayEl = document.getElementById('user-display');
     const navLinks = document.querySelectorAll('.nav-link');
@@ -792,7 +906,10 @@
     const toastContainer = document.getElementById('toast-container');
     const modalInputContainer = document.getElementById('modal-input-container');
 
-    // ... (other element queries are the same)
+    // Auth Form elements
+    const loginForm = document.getElementById('login-form');
+    const authErrorEl = document.getElementById('auth-error');
+    const logoutBtn = document.getElementById('logout-btn');
     
     // Timesheet Elements
     const clockInOutBtn = document.getElementById('clock-in-out-btn');
@@ -837,6 +954,13 @@
     const modalMessage = document.getElementById('modal-message');
     const confirmationInput = document.getElementById('confirmation-input');
     const themeSelector = document.getElementById('theme-selector');
+    const sidebarOpenBtn = document.getElementById('sidebar-open-btn');
+    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    const teamList = document.querySelector('#settings-tab-team ul');
+    const inviteForm = document.querySelector('#settings-tab-team form');
+
 
     // AI Insights Elements
     const aiInsightsBtn = document.getElementById('ai-insights-btn');
@@ -885,10 +1009,15 @@
         if (interval > 1) return Math.floor(interval) + " minutes ago";
         return Math.floor(seconds) + " seconds ago";
     }
+    
+    function setAuthError(message) {
+        authErrorEl.textContent = message;
+        authErrorEl.classList.toggle('hidden', !message);
+    }
 
     // --- Core App Logic ---
     function showSection(sectionId) {
-        document.querySelectorAll('main > section').forEach(section => {
+        document.querySelectorAll('main > div > section').forEach(section => {
             section.classList.toggle('hidden', section.id !== `section-${sectionId}`);
         });
         navLinks.forEach(link => {
@@ -897,22 +1026,30 @@
         if(sectionId === 'dashboard') {
             renderAllDashboardElements();
         }
+        // Close sidebar on mobile nav
+        sidebar.classList.add('-translate-x-full');
+        sidebarOverlay.classList.add('hidden');
+
     }
     
     // --- Data Listeners ---
     function setupDataListeners() {
         if (!userId) return;
         
+        // Clear any previous listeners
+        unsubscribeListeners.forEach(unsub => unsub());
+        unsubscribeListeners = [];
+
         // Timesheet Listener
         const timeLogsCollection = collection(db, `artifacts/${appId}/users/${userId}/timeLogs`);
-        onSnapshot(timeLogsCollection, (snapshot) => {
+        const unsubTimeLogs = onSnapshot(timeLogsCollection, (snapshot) => {
             timeLog = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             updateTimesheetUI();
         });
 
         // ESG Data Listener
         const esgCollection = collection(db, `artifacts/${appId}/users/${userId}/esgData`);
-        onSnapshot(esgCollection, (snapshot) => {
+        const unsubEsg = onSnapshot(esgCollection, (snapshot) => {
             esgRecords = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             esgRecords.sort((a, b) => a.month.localeCompare(b.month)); // Sort for charts
             renderAllDashboardElements();
@@ -921,11 +1058,13 @@
 
         // ESG Goals Listener
         const goalsCollection = collection(db, `artifacts/${appId}/users/${userId}/esgGoals`);
-        onSnapshot(goalsCollection, (snapshot) => {
+        const unsubGoals = onSnapshot(goalsCollection, (snapshot) => {
             esgGoals = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             renderGoals();
             renderAllDashboardElements(); // Re-render dashboard to update goal progress
         });
+
+        unsubscribeListeners.push(unsubTimeLogs, unsubEsg, unsubGoals);
     }
 
     // --- Timesheet Feature ---
@@ -1287,11 +1426,29 @@
     // --- Dashboard Charting & Data Calculation ---
     function calculateEsgScore(record) {
         if (!record) return 0;
-        const envScore = ((record.waste || 0) + (100 - ((record.energy || 5000) / 10000 * 100))) / 2;
-        const socScore = ((record.diversity || 0) + (100 - (record.safety || 0) * 10)) / 2;
-        const govScore = record.compliance || 0;
+        const envScore = calculateEnvironmentalScore(record);
+        const socScore = calculateSocialScore(record);
+        const govScore = calculateGovernanceScore(record);
         return (envScore + socScore + govScore) / 3;
     }
+
+     function calculateEnvironmentalScore(record) {
+        if(!record || record.waste === undefined || record.energy === undefined) return 0;
+        const energyScore = 100 - Math.min(100, (record.energy / 10000) * 100);
+        return (energyScore + record.waste) / 2;
+    }
+
+    function calculateSocialScore(record) {
+        if(!record || record.diversity === undefined || record.safety === undefined) return 0;
+        const safetyScore = 100 - (record.safety * 20); // 5 incidents = 0 score
+        return (record.diversity + safetyScore) / 2;
+    }
+
+    function calculateGovernanceScore(record) {
+        if(!record || record.compliance === undefined) return 0;
+        return record.compliance;
+    }
+
 
     function updateTrendElement(containerId, currentValue, previousValue, lowerIsBetter = false) {
         const container = document.getElementById(containerId);
@@ -1563,9 +1720,9 @@
         const isDark = userSettings.theme === 'dark';
         const textColor = isDark ? '#e5e7eb' : '#374151';
         
-        const envScore = calculateEsgScore({ ...latestRecord, social: 0, governance: 0 });
-        const socScore = calculateEsgScore({ ...latestRecord, environmental: 0, governance: 0 });
-        const govScore = calculateEsgScore({ ...latestRecord, environmental: 0, social: 0 });
+        const envScore = calculateEnvironmentalScore(latestRecord);
+        const socScore = calculateSocialScore(latestRecord);
+        const govScore = calculateGovernanceScore(latestRecord);
 
         const data = {
             labels: ['Environmental', 'Social', 'Governance'],
@@ -1639,7 +1796,7 @@
         updateThemeButtons();
 
         const displayName = `${userSettings.profile.firstName || ''} ${userSettings.profile.lastName || ''}`.trim();
-        userDisplayEl.textContent = displayName || 'User';
+        userDisplayEl.textContent = displayName || auth.currentUser?.email || 'User';
         firstNameInput.value = userSettings.profile.firstName || '';
         lastNameInput.value = userSettings.profile.lastName || '';
         bioInput.value = userSettings.profile.bio || '';
@@ -1851,25 +2008,47 @@
         }
     });
     
-    updatePasswordBtn.addEventListener('click', () => {
+    updatePasswordBtn.addEventListener('click', async () => {
+        const currentPass = document.getElementById('currentPassword').value;
         const newPass = newPasswordInput.value;
         const confirmPass = confirmPasswordInput.value;
-        if (!newPass || newPass.length < 6) {
-            return showToast('Password must be at least 6 characters long.', 'error');
+        
+        if (!currentPass || !newPass || !confirmPass) {
+            return showToast('Please fill all password fields.', 'error');
+        }
+        if (newPass.length < 6) {
+            return showToast('New password must be at least 6 characters long.', 'error');
         }
         if (newPass !== confirmPass) {
             return showToast('New passwords do not match.', 'error');
         }
-        // In a real app, you would call the Firebase updatePassword method here.
-        // For this demo, we'll simulate success.
+        
         setButtonLoading(updatePasswordBtn, true);
-        setTimeout(() => {
+        const user = auth.currentUser;
+        if (!user.email) {
+            showToast("Password can't be changed for anonymous accounts.", "error");
+            setButtonLoading(updatePasswordBtn, false);
+            return;
+        }
+        const credential = EmailAuthProvider.credential(user.email, currentPass);
+
+        try {
+            await reauthenticateWithCredential(user, credential);
+            await updatePassword(user, newPass);
+            showToast('Password updated successfully!');
             document.getElementById('currentPassword').value = '';
             newPasswordInput.value = '';
             confirmPasswordInput.value = '';
+        } catch (error) {
+            console.error("Password Update Error:", error.code);
+            if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                showToast('Incorrect current password.', 'error');
+            } else {
+                showToast('Failed to update password. Please try again.', 'error');
+            }
+        } finally {
             setButtonLoading(updatePasswordBtn, false);
-            showToast('Password updated successfully (simulated).');
-        }, 1000);
+        }
     });
 
     notificationToggles.forEach(toggle => {
@@ -2064,10 +2243,25 @@
     // AI Modal Listeners
     aiInsightsBtn.addEventListener('click', getAiInsights);
     closeAiModalBtn.addEventListener('click', () => aiInsightsModal.classList.add('hidden'));
+
+    // Mobile Sidebar
+    sidebarOpenBtn.addEventListener('click', () => {
+        sidebar.classList.remove('-translate-x-full');
+        sidebarOverlay.classList.remove('hidden');
+    });
+    sidebarCloseBtn.addEventListener('click', () => {
+        sidebar.classList.add('-translate-x-full');
+        sidebarOverlay.classList.add('hidden');
+    });
+     sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.add('-translate-x-full');
+        sidebarOverlay.classList.add('hidden');
+    });
     
-    // --- Initialization ---
+    // --- AUTHENTICATION LOGIC ---
     onAuthStateChanged(auth, async (user) => {
-        if (user) {
+        if (user && !user.isAnonymous) {
+            // User is signed in with a permanent account
             userId = user.uid;
             await loadUserSettings();
             setupDataListeners();
@@ -2075,22 +2269,125 @@
             updateClock();
             setDefaultReportDates();
             renderNewsFeed();
+            
             loadingEl.classList.add('hidden');
+            authContainer.classList.add('hidden');
             appContainerEl.classList.remove('hidden');
+            appContainerEl.classList.add('flex');
             showSection('dashboard');
+        } else if (user && user.isAnonymous) {
+            // User is anonymous, allow them to use the app but prompt to sign up
+            userId = user.uid;
+            await loadUserSettings();
+            setupDataListeners();
+            setInterval(updateClock, 1000);
+            updateClock();
+            setDefaultReportDates();
+            renderNewsFeed();
+
+            loadingEl.classList.add('hidden');
+            authContainer.classList.add('hidden');
+            appContainerEl.classList.remove('hidden');
+            appContainerEl.classList.add('flex');
+            showSection('dashboard');
+        }
+        else {
+            // User is signed out
+            userId = null;
+            unsubscribeListeners.forEach(unsub => unsub());
+            unsubscribeListeners = [];
+
+            loadingEl.classList.add('hidden');
+            appContainerEl.classList.add('hidden');
+            authContainer.classList.remove('hidden');
+        }
+    });
+    
+    function toggleAuthMode(e) {
+        if (e) e.preventDefault();
+        const isSigningUp = loginForm.dataset.mode === 'signup';
+        
+        loginForm.dataset.mode = isSigningUp ? 'login' : 'signup';
+        loginForm.querySelector('button[type="submit"]').textContent = isSigningUp ? 'Sign In' : 'Create Account';
+        
+        const linkContainer = loginForm.nextElementSibling;
+        if (isSigningUp) {
+            linkContainer.innerHTML = `Don't have an account? <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Sign up</a>`;
+        } else {
+            linkContainer.innerHTML = `Already have an account? <a href="#" id="show-signup" class="font-medium text-blue-600 hover:text-blue-500">Sign in</a>`;
+        }
+        
+        // Re-attach listener since we're changing the innerHTML
+        document.getElementById('show-signup').addEventListener('click', toggleAuthMode);
+        setAuthError('');
+    }
+    
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const isSigningUp = loginForm.dataset.mode === 'signup';
+        
+        setAuthError('');
+        
+        try {
+            if (isSigningUp) {
+                if(password.length < 6) {
+                    setAuthError("Password must be at least 6 characters long.");
+                    return;
+                }
+                // Check if user is currently anonymous
+                if(auth.currentUser && auth.currentUser.isAnonymous) {
+                    // Link anonymous account to the new email/password
+                    const credential = EmailAuthProvider.credential(email, password);
+                    await linkWithCredential(auth.currentUser, credential);
+                    showToast("Account created & data migrated!");
+                } else {
+                    // Or create a fresh new user
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showToast("Account created successfully!");
+                }
+            } else {
+                await signInWithEmailAndPassword(auth, email, password);
+            }
+            // onAuthStateChanged will handle UI switching
+        } catch (error) {
+            console.error("Auth Error:", error.code, error.message);
+            let friendlyMessage = "An unknown error occurred. Please try again.";
+            switch (error.code) {
+                case 'auth/invalid-email':
+                    friendlyMessage = "Please enter a valid email address.";
+                    break;
+                case 'auth/user-not-found':
+                case 'auth/invalid-credential': // Catches both wrong email and password for security
+                    friendlyMessage = "Incorrect email or password. Please try again.";
+                    break;
+                case 'auth/wrong-password':
+                    friendlyMessage = "Incorrect password. Please try again.";
+                    break;
+                case 'auth/email-already-in-use':
+                    friendlyMessage = "An account with this email already exists. Please sign in.";
+                    break;
+                case 'auth/weak-password':
+                    friendlyMessage = "Password should be at least 6 characters long.";
+                    break;
+                 case 'auth/credential-already-in-use':
+                    friendlyMessage = "This email is already linked to another account.";
+                    break;
+            }
+            setAuthError(friendlyMessage);
         }
     });
 
-    (async () => {
-      try {
-        if (!auth.currentUser) {
-          await signInAnonymously(auth);
-        }
-      } catch(error) {
-          console.error("Authentication failed:", error);
-          loadingEl.querySelector('p').textContent = 'Authentication Failed.';
-      }
-    })();
+    document.getElementById('show-signup').addEventListener('click', toggleAuthMode);
+    
+    logoutBtn.addEventListener('click', () => {
+        signOut(auth);
+    });
+
+    // --- INITIALIZATION ---
+    // The onAuthStateChanged listener handles the initial UI state.
+    // We let onAuthStateChanged decide whether to show the app or login page.
 
 </script>
 </body>
