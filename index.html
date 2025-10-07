@@ -649,8 +649,43 @@
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-esg-timesheet-app';
     let firebaseConfig;
     try {
-        firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "DEMO", projectId: "DEMO" };
-    } catch(e) { console.error("Firebase config error:", e); firebaseConfig = { apiKey: "DEMO", projectId: "DEMO" }; }
+        // IMPORTANT FOR LOCAL DEVELOPMENT:
+        // The __firebase_config variable is injected in the intended platform.
+        // To run this locally in VSCode, replace this with your own Firebase project config.
+        // 1. Go to your Firebase project settings.
+        // 2. Under "Your apps", find your web app and click the settings icon (⚙️).
+        // 3. Copy the firebaseConfig object and paste it below.
+
+        /*
+        // --- PASTE YOUR FIREBASE CONFIG HERE ---
+        const yourFirebaseConfig = {
+          apiKey: "AIzaSy...",
+          authDomain: "your-project-id.firebaseapp.com",
+          projectId: "your-project-id",
+          storageBucket: "your-project-id.appspot.com",
+          messagingSenderId: "...",
+          appId: "1:..."
+        };
+        firebaseConfig = yourFirebaseConfig; // Uncomment this line
+        */
+        
+        // This line tries to use the injected config; if it fails, it uses a demo config.
+        if (typeof __firebase_config !== 'undefined') {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } else if (typeof yourFirebaseConfig !== 'undefined') {
+            // This allows the local config to be used if pasted above
+            firebaseConfig = yourFirebaseConfig;
+        }
+        else {
+            // If you haven't pasted your config above, the app will try to use a demo config which will fail.
+            console.warn("Using demo Firebase config. Authentication will likely fail. Please provide your own config for local testing.");
+            firebaseConfig = { apiKey: "DEMO", projectId: "DEMO" }; 
+        }
+
+    } catch(e) { 
+        console.error("Firebase config error:", e); 
+        firebaseConfig = { apiKey: "DEMO", projectId: "DEMO" }; 
+    }
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
