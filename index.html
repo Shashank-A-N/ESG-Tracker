@@ -15,76 +15,273 @@
         }
     </script>
     <style>
+        /* === Base & Layout === */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
         body {
             font-family: 'Inter', sans-serif;
             overflow-x: hidden;
         }
+
         main {
             height: 100vh;
         }
-        .nav-link {
-            transition: all 0.2s ease-in-out;
-        }
-        .nav-link.active, .nav-link:hover {
-            background-color: #e0f2fe; /* light sky 100 */
-            color: #0284c7; /* sky 600 */
-        }
-        .dark .nav-link.active, .dark .nav-link:hover {
-             background-color: #0c4a6e; /* sky 900 */
-             color: #e0f2fe; /* sky 100 */
-        }
-        .settings-link.active, .settings-link:hover {
-            background-color: #e0f2fe; /* light sky 100 */
-            color: #0284c7; /* sky 600 */
-        }
-        .dark .settings-link.active, .dark .settings-link:hover {
-             background-color: #0c4a6e; /* sky 900 */
-             color: #e0f2fe; /* sky 100 */
+
+        .settings-content {
+            flex-grow: 1;
+            min-width: 0; /* Prevents content from overflowing in a flex container */
         }
 
-        .section {
-            animation: fadeIn 0.5s ease-in-out;
+        /* === Components === */
+
+        /* --- Main Navigation & Settings Links (Combined) --- */
+        .nav-link,
+        .settings-link {
+            transition: all 0.2s ease-in-out;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        /* Default state for vertical links */
+        .settings-link {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #8a9098; /* text-gray-700 */
         }
-        /* Chart.js responsive canvas */
+
+        /* Active & Hover States */
+        .nav-link.active, .nav-link:hover,
+        .settings-link.active, .settings-link:not(.active):hover {
+            background-color: #e0f2fe; /* light sky-100 */
+            color: #0284c7; /* sky-600 */
+        }
+
+        /* Dark Mode Active & Hover States */
+        .dark .nav-link.active, .dark .nav-link:hover,
+        .dark .settings-link.active, .dark .settings-link:not(.active):hover {
+            background-color: #0c4a6e; /* sky-900 */
+            color: #e0f2fe; /* sky-100 */
+        }
+
+        /* --- Settings Sidebar --- */
+        #settings-sidebar {
+            width: 100%; /* Default width for large screens */
+            top: 0px; /* Adjust this to match your header's height */
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            background-color: #111827;
+            padding: 10px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+            transition: width 0.3s ease-in-out, padding 0.3s ease-in-out; /* Smooth transition */
+        }
+
+        #sidebar {
+            transition: transform 0.3s ease-in-out; /* For mobile slide-out */
+        }
+
+        /* --- Charts --- */
         .chart-container {
             position: relative;
             height: 40vh;
             width: 100%;
         }
-        /* Toast Notification */
-        .toast {
-            animation: slideIn 0.3s ease-in-out, fadeOut 0.5s ease-in-out 2.5s forwards;
+
+        #chart-toggles {
+            display: flex;
+            flex-wrap: wrap;
         }
-        @keyframes slideIn {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+
+        .chart-toggle {
+            cursor: pointer;
         }
-        @keyframes fadeOut {
-            from { opacity: 1; }
-            to { opacity: 0; }
+
+        #chart-toggles .chart-toggle.active {
+            font-weight: 600;
+            background-color: #e0f2fe;
+            color: #0284c7;
         }
-        @media print {
-             body * { visibility: hidden; }
-             .print-area, .print-area * { visibility: visible; }
-             .print-area { position: absolute; left: 0; top: 0; width: 100%; }
-             .no-print { display: none; }
+
+        /* --- Forms & Inputs --- */
+        input[type="text"], input[type="email"], input[type="password"],
+        input[type="number"], input[type="search"], input[type="tel"] {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background-color: #ffffff;
+            font-size: 0.9rem;
+            color: #111827;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
         }
-        /* Modal backdrop */
+
+        input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus,input[type="date"]:focus,input[type="month"]:focus,
+        input[type="number"]:focus, input[type="search"]:focus, input[type="tel"]:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        ::placeholder {
+            color: #9ca3af;
+            opacity: 1;
+        }
+
+        #password-criteria li {
+            transition: color 0.3s ease-in-out;
+        }
+
+        /* --- Modals & Toasts --- */
         .modal-backdrop {
             transition: opacity 0.3s ease-in-out;
         }
 
-        /* Sidebar transition for mobile */
-        #sidebar {
-            transition: transform 0.3s ease-in-out;
+        .toast {
+            animation: slideIn 0.3s ease-in-out, fadeOut 0.5s ease-in-out 2.5s forwards;
         }
-         /* For password criteria list items */
-        #password-criteria li {
-            transition: color 0.3s ease-in-out;
+
+        /* === Animations === */
+        .section {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        /* === Utilities & Print === */
+        @media print {
+            body * { visibility: hidden; }
+            .print-area, .print-area * { visibility: visible; }
+            .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+            .no-print { display: none; }
+        }
+
+        /* === Responsive Overrides for Small Screens === */
+        @media (max-width: 960px) {
+            /* Shrink the sidebar */
+            #settings-sidebar {
+                position: sticky;
+                top: 70px;
+                width: auto;
+                padding: 5px;
+
+            }
+            
+            /* Hide the text label in the links */
+            .link-text {
+                display: none;
+            }
+
+            /* Style links as icon-only buttons */
+            .settings-link {
+                justify-content: center;
+                width: 50px;
+                height: 50px;
+                position: relative; /* Needed for tooltip positioning */
+            }
+
+            /* Remove icon margin when text is hidden */
+            .settings-link i {
+                margin-right: 0;
+            }
+            
+            /* Create and style the tooltip that appears on hover */
+            .settings-link::after {
+                content: attr(data-tooltip);
+                position: absolute;
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+            }
+
+            .settings-link:hover::after {
+                bottom: 125%; /* Position it above the icon */
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #1f2937;
+                color: #ffffff;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 14px;
+                white-space: nowrap;
+                z-index: 10;
+                opacity: 1;
+                visibility: visible;
+                transition: opacity 0.2s ease;
+                overflow: visible;
+            }
+        }
+
+        /* --- Global Tooltip Styling --- */
+        #global-tooltip {
+            /* Use 'fixed' to position relative to the screen, ignoring parents */
+            position: fixed;
+            
+            /* Visuals */
+            background-color: #1f2937; /* Dark background */
+            color: #ffffff; /* White text */
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            white-space: nowrap;
+            z-index: 9999; /* Ensure it's on top of everything */
+
+            /* Initially hidden */
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none; /* Can't be interacted with */
+            transition: opacity 0.2s ease;
+        }
+
+        /* Class to show the tooltip */
+        #global-tooltip.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+
+        /* --- FIX FOR SETTINGS PAGE OVERLAP --- */
+
+
+        #section-settings #settings-nav {
+            position: sticky;
+            /* This value should be the height of your main site header (e.g., 60px) */
+            top: 60px; 
+
+            /* This makes the bar opaque so content doesn't show through */
+            background-color: #111827; /* Match your dark theme background */
+            
+            /* This ensures the bar stays on top of the content */
+            z-index: 10;
+        }
+
+        /* 2. Push down the content area that follows the navigation */
+        #section-settings main {
+            /* This creates a buffer zone at the top of your content.
+            Adjust this value to be a little more than the height of your nav bar.
+            */
+            padding-top: 80px; 
+        }
+
+        .fa-eye-slash:hover {
+            color: #0284c7;
         }
     </style>
 </head>
@@ -134,7 +331,7 @@
     </div>
 
 
-    <div id="app-container" class="hidden">
+    <div id="app-container" class="hidden md:flex h-screen">
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"></div>
         <!-- Sidebar Navigation -->
         <aside id="sidebar" class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col flex-shrink-0 fixed md:relative h-full z-40 transform -translate-x-full md:translate-x-0">
@@ -563,30 +760,37 @@
                     <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Settings</h2>
                     <p class="text-gray-500 dark:text-gray-400 mt-1">Manage your account and application preferences.</p>
                 </header>
-                <div class="flex flex-col md:flex-row gap-8">
+                <!-- <div class="flex flex-col md:flex-row gap-8"> -->
+                <div class="settings-container">
                     <!-- Settings Navigation -->
-                    <aside class="md:w-1/4 lg:w-1/5 sticky top-0 self-start">
-                        <nav id="settings-nav" class="space-y-1">
-                            <button data-settings-tab="profile" class="settings-link active w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md">
-                                <i class="fas fa-user w-5 h-5 mr-3"></i>Profile
+                    <aside id="settings-sidebar" class="md:w-1/4 lg:w-1/5 sticky top-0 self-start">
+                        <nav id="settings-nav" class="flex border-b border-gray-200">
+                            <button data-settings-tab="profile" class="settings-link active w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md" data-tooltip="Profile">
+                                <i class="fas fa-user w-5 h-5 mr-3"></i>
+                                <span class="link-text">Profile</span>
                             </button>
-                            <button data-settings-tab="security" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md">
-                                <i class="fas fa-shield-alt w-5 h-5 mr-3"></i>Security
+                            <button data-settings-tab="security" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md" data-tooltip="Security">
+                                <i class="fas fa-shield-alt w-5 h-5 mr-3"></i>
+                                <span class="link-text">Security</span>
                             </button>
-                             <button data-settings-tab="team" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md">
-                                <i class="fas fa-users w-5 h-5 mr-3"></i>Team
+                             <button data-settings-tab="team" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md" data-tooltip="Team">
+                                <i class="fas fa-users w-5 h-5 mr-3"></i>
+                                <span class="link-text">Team</span>
                             </button>
-                            <button data-settings-tab="notifications" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md">
-                                <i class="fas fa-bell w-5 h-5 mr-3"></i>Notifications
+                            <button data-settings-tab="notifications" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md" data-tooltip="Notifications">
+                                <i class="fas fa-bell w-5 h-5 mr-3"></i>
+                                <span class="link-text">Notifications</span>
                             </button>
-                            <button data-settings-tab="appearance" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md">
-                                <i class="fas fa-palette w-5 h-5 mr-3"></i>Appearance
+                            <button data-settings-tab="appearance" class="settings-link w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-md" data-tooltip="Appearance">
+                                <i class="fas fa-palette w-5 h-5 mr-3"></i>
+                                <span class="link-text">Appearance</span>
                             </button>
                         </nav>
                     </aside>
 
                     <!-- Settings Content -->
-                    <main class="flex-1">
+                    <!-- <main class="flex-1"> -->
+                    <main class="settings-content">
                         <!-- Profile Settings Tab -->
                         <div id="settings-tab-profile" class="settings-tab-content space-y-6">
                              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700">
@@ -865,6 +1069,8 @@
         </div>
     </div>
 
+    <div id="global-tooltip" class="tooltip" role="tooltip"></div>
+
 
     <!-- Add new CSS for toggles and theme options -->
     <style>
@@ -893,6 +1099,8 @@
             @apply text-blue-600 dark:text-blue-400;
         }
     </style>
+
+    
 
 <script type="module">
     // --- Firebase Imports ---
@@ -2045,7 +2253,7 @@
         const systemPrompt = "You are an expert ESG consultant. Analyze the following monthly data and provide a brief, actionable, bulleted list of recommendations for improvement. Format the response as simple HTML list items (<li>).";
         const userQuery = `My latest ESG data: Energy Consumption is ${latestData.energy} kWh, Waste Recycled is ${latestData.waste}%, Workforce Diversity is ${latestData.diversity}%, Safety Incidents is ${latestData.safety}, and Compliance Training is ${latestData.compliance}%. What are your top recommendations?`;
         
-        const apiKey = ""; // This will be handled by the environment
+        const apiKey = "AIzaSyA-FfPzdQSAoWF40GaGQyhhU4X9QKDraKU"; // This will be handled by the environment
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
 
         const payload = {
@@ -2686,6 +2894,44 @@
         }
         // onAuthStateChanged handles showing the app from here.
     })();
+
+    document.addEventListener('DOMContentLoaded', function () {
+    const tooltip = document.getElementById('global-tooltip');
+    const linksWithTooltips = document.querySelectorAll('[data-tooltip]');
+
+    linksWithTooltips.forEach(link => {
+        // Show tooltip on mouse enter
+        link.addEventListener('mouseenter', (event) => {
+            const tooltipText = event.currentTarget.dataset.tooltip;
+            if (!tooltipText) return;
+
+            // Set the text
+            tooltip.textContent = tooltipText;
+
+            // Get the position of the icon/link
+            const rect = event.currentTarget.getBoundingClientRect();
+            
+            // Position the tooltip
+            // We use the tooltip's own size to center it perfectly
+            const tooltipRect = tooltip.getBoundingClientRect();
+            let top = rect.top - tooltipRect.height - 8; // 8px gap above
+            let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+            // Apply the position
+            tooltip.style.top = `${top}px`;
+            tooltip.style.left = `${left}px`;
+            
+            // Show the tooltip
+            tooltip.classList.add('show');
+        });
+
+        // Hide tooltip on mouse leave
+        link.addEventListener('mouseleave', () => {
+            tooltip.classList.remove('show');
+        });
+    });
+});
+
 
 </script>
 </body>
